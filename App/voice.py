@@ -1,3 +1,5 @@
+import functions #File esterno con el funzioni VAD e SR
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
