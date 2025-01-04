@@ -5,14 +5,15 @@ import os
 from speechbrain.inference import SpeakerRecognition
 import json
 import torchaudio.transforms as T
+import io
 
 def preprocess_audio(audio, sampling_rate=16000):
-    # Normalizza il volume
+    #Normalizza il volume
     max_val = audio.abs().max()
     if max_val > 0:
         audio = audio / max_val
 
-    # Rimuove il rumore di fondo
+    #Rimuove il rumore di fondo
     vad = T.Vad(sample_rate=sampling_rate)
     audio = vad(audio.unsqueeze(0)).squeeze(0)
     return audio
@@ -44,7 +45,7 @@ uploaded_audio = torch.nn.functional.normalize(uploaded_audio, dim=0)
 
 # Calcola lo score per ciascun file di riferimento
 scores = []
-THRESHOLD = 0.7  # Soglia di identificazione
+THRESHOLD = 0.6  # Soglia di identificazione
 
 for reference_file in reference_files:
     # Leggi il file di riferimento

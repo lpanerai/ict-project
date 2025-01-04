@@ -46,22 +46,27 @@ SERVER_URL = "http://localhost:3000/upload"
 #MAIN -- Loop Vocale
 #Configurazione microfono
 SAMPLE_RATE = 16000  #Silero VAD funziona con 16 kHz
-DURATION = 3         #Ascolta per 5 secondi
+DURATION_VAD = 3         #Ascolta per 3 secondi
+DURATION_VR = 5          #Ascolta per 5 secondi
 c = 0                #Contatore SV
 
+#MAIN: Loop vocale
 if check_microphone():
+    c = 0
+    
     while True:
-        c = 0
 
         # Ascolta l'audio
-        audio = listen_for_audio(DURATION, SAMPLE_RATE)
+        audio = listen_for_audio(DURATION_VAD, SAMPLE_RATE)
 
         # Verifica presenza di voce
         if vad_detect(audio, silero_vad, SAMPLE_RATE):
-            print("\nVoce rilevata!")
+            print("\n----------------------------------------")
+            print("Voce rilevata!")
+            print("----------------------------------------\n")
             
             #Sezione Speacker Identification:
-            audio_sv = listen_for_audio(DURATION, SAMPLE_RATE)
+            audio_sv = listen_for_audio(DURATION_VR, SAMPLE_RATE)
             sd.wait()
 
             #Salva in File-Temporaneo
@@ -69,24 +74,88 @@ if check_microphone():
             save_audio_to_file(audio_sv, temp_filename, SAMPLE_RATE)
 
             #Inter.Server
-            print("\nInvio al server...")
+            print("\n------------------------------------------")
+            print("Invio al server...")
+            print("------------------------------------------")
             response = send_audio_to_server(temp_filename, SERVER_URL)
             
             print(f"\nRisposta del server: {response}")
 
             if "Identity confermata" in response:
+                print("\n------------------------------------------")
                 print("Accesso consentito!")
+                print("------------------------------------------")
                 
+                #Sezione Face Verification
+                #Azioni...
+                print("\nBentornato...")
                 break  # Esci dal loop
             
             else:
                 c += 1
                 if c <= 3:
-                    print("\nNessuna voce riconosciuta, riprovo...")
-                    continue #Ricomincio Ciclo Speak.Verific.
+                    print(f"\nNessuna voce riconosciuta. Tentativo {c}/3. Riprovando...")
+                    continue  #Riprova
+
                 else:
-                    print("\nTentativi esauriti per l'identificazione.")
-                    break  #Esco dal Ciclo Speak.Verific.
-        
+                    print("\n--------------------------------------------")
+                    print("Tentativi esauriti per l'identificazione.")
+                    print("--------------------------------------------")
+                    print("\nNew User?")
+                    
+                    max_attempts = 2  # Numero massimo di tentativi
+
+                    while max_attempts > 0:
+                        ans = input("\nDo you want to enroll? (Y/N): ")
+
+                        if (ans == "Y" or ans == "y"):
+                            print("\n--------------------------------------------")
+                            print("Inserire Key per Enrollment:")
+                            print("--------------------------------------------")
+
+                            key = input("Key: ")
+
+                            if (key == "pussy" or key == "dick"):
+                                #Azione in caso di successo
+                                print("\n--------------------------------------------")
+                                print("Chiave accettata. Procedo con l'enrollment...")
+                                print("--------------------------------------------")
+                                
+                                print("\nPhase-1: Voice...")
+                                #Azione Voice
+
+                                print("\nPhase-2: Face...")
+                                #Azione Face
+
+                                break #Esce dal ciclo in caso di successo
+
+                            else:
+                                max_attempts -= 1
+                                if max_attempts > 0:
+                                    print("\n--------------------------------------------")
+                                    print(f"\nChiave errata. Hai ancora {max_attempts} tentativi.")
+                                    print("--------------------------------------------")
+
+                                else:
+                                    print("\n--------------------------------------------")
+                                    print("\nHai esaurito tutti i tentativi. Accesso negato.")
+                                    print("--------------------------------------------")
+
+                        else:
+                            print("\n--------------------------------------------")   
+                            print("\nOperazione annullata.")
+                            print("--------------------------------------------")
+                            break
+
+                    else:
+                        break  #Esco dal Ciclo Principale
+
         else:
+            print("\n--------------------------------------------")
             print("Nessuna voce rilevata. Ricomincio...")
+            print("--------------------------------------------")
+
+else:
+    print("\n----------------------------------------------------")
+    print("ERRORE:Controllare Dispositivi: Microfono o Sensore")
+    print("----------------------------------------------------")
