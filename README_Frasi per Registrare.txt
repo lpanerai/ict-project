@@ -1,0 +1,16 @@
+In seguito vengono riportate le frasi per l'enrollment del sistema:
+
+1):
+"Hello, my name is [Your Name]. I am recording this voice sample to help the system recognize my voice. I will say a variety of words and sentences, using different sounds and patterns. The quick brown fox jumps over the lazy dog. She sells seashells by the seashore. Peter Piper picked a peck of pickled peppers. It's a beautiful day, and I am happy to be speaking. I enjoy listening to music, reading books, and traveling. Can you hear me clearly? I hope the system will understand me well. Thank you for processing my voice. Goodbye!"
+
+2):
+"Good afternoon, my name is [Your Name]. I’m here to record a voice sample for the system to analyze. Let’s start with a few basic phrases. The sun is shining brightly today. How quickly can you jump over the high fence? The rain in Spain stays mainly in the plains. I think I’ll go for a walk in the park later. My favorite color is blue, and I love eating fresh fruit. Do you prefer tea or coffee in the morning? This is a simple test, but I hope it helps improve the accuracy of voice recognition. Thank you for your attention."
+
+3):
+"Hi there! My name is [Your Name], and I am recording this voice sample to help improve speech recognition. I’m going to say a few sentences with different sounds and words. The cat sat on the mat and looked out the window. We went to the market and bought some fresh vegetables. It's always fun to try new things and explore the unknown. Did you know that the tallest mountain in the world is Mount Everest? Some birds fly long distances during migration. I enjoy reading, hiking, and spending time with friends. What is your favorite hobby? Thank you for helping to improve the system. I look forward to hearing the results!"
+
+Frasi Test in 5s:
+
+1): "Hello, I am Giorgio, speaking clearly."
+
+2): "Fast fox jumps high in the sky."

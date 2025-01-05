@@ -7,10 +7,8 @@ const { spawn } = require('child_process'); // Per eseguire Python dal server
 const app = express();
 const port = 3000;
 
-//----Togliere in versione finale ------
-// Percorso all'interprete Python nella cartella venv
-const pythonPath = "C:\\Users\\giorg\\Downloads\\ict_work\\work_ict\\Scripts\\python.exe"; // Windows
-//----Togliere in versione finale ------
+// Percorso all'interprete Python
+const pythonPath = "C:\\Users\\giorg\\Downloads\\ict_work\\work_ict\\Scripts\\python.exe"; 
 
 // Configura multer per salvare i file caricati
 const storage = multer.diskStorage({
@@ -25,57 +23,84 @@ const upload = multer({ storage });
 
 // Rotta principale
 app.get('/', (req, res) => {
-  res.send('Server attivo! Usa POST /upload per caricare file audio e confrontarli.');
+  res.send('Server attivo! Usa POST /enroll o POST /identify.');
 });
-
-// Rotta per caricare file e fare Speaker Identification
-app.post('/upload', upload.single('file'), (req, res) => {
+ 
+// Endpoint per l'enrollment
+app.post('/enroll', upload.single('file'), (req, res) => {
   const uploadedFilePath = req.file.path;
-  const referenceFilesDirectory = path.join(__dirname, 'uploads', 'references'); // Directory dei file di riferimento
+  const speaker = req.body.speaker;
 
-  console.log(`File ricevuto: ${uploadedFilePath}`);
+  console.log(`File ricevuto per enrollment: ${uploadedFilePath} per lo speaker: ${speaker}`);
 
-  // Recupera tutti i file di riferimento
-  const referenceFiles = fs.readdirSync(referenceFilesDirectory).filter(file => file.endsWith('.wav'));
-  const referenceFilePaths = referenceFiles.map(file => path.join(referenceFilesDirectory, file));
+  // Esegui lo script Python per calcolare gli embedding
+  const pythonProcess = spawn(pythonPath, ['calculate_embedding.py', uploadedFilePath, speaker]);
 
-  // Esegui uno script Python per lo Speaker Identification
-  const pythonProcess = spawn(pythonPath, ['speaker_identification.py', uploadedFilePath, ...referenceFilePaths]);
-
-  let results = [];
-  let resultBuffer = '';
+  let resultBuffer = ""; // Buffer per accumulare i dati stdout
+  let errorBuffer = "";  // Buffer per accumulare i dati stderr
 
   pythonProcess.stdout.on('data', (data) => {
-    console.log(`Risultato: ${data}`);
-    resultBuffer += data.toString(); // Accumula tutti i dati
+    resultBuffer += data.toString(); // Accumula i dati ricevuti
   });
 
   pythonProcess.stderr.on('data', (data) => {
-    console.error(`Errore: ${data}`);
+    errorBuffer += data.toString(); // Accumula eventuali errori
   });
 
   pythonProcess.on('close', (code) => {
-    if (code === 0 && resultBuffer) {
+    if (code === 0) { // Processo terminato correttamente
       try {
-        const result = JSON.parse(resultBuffer.trim());
-        console.log(`Media degli score: ${result.average_score}`);
-        if (result.status === "confirmed") {
-          res.status(200).send(`Identity confermata`);
-        }  else {
-          res.status(200).send(`Identity non riconosciuta. Media score: ${result.average_score}`);
-        }
-      } catch (error) {
-        console.error("Errore durante la decodifica del JSON:", error);
-        res.status(500).send('Errore durante l\'elaborazione del risultato.');
+        const parsedData = JSON.parse(resultBuffer.trim()); // Parse del risultato JSON
+        console.log(`Risultato enrollment: ${JSON.stringify(parsedData)}`);
+        res.status(200).json(parsedData); // Risposta al client
+      } catch (err) {
+        console.error("Errore durante il parsing della risposta Python:", err);
+        res.status(500).send("Errore durante l'elaborazione della risposta JSON.");
       }
-    } else {
-      res.status(500).send('Errore durante l\'elaborazione.');
+    } else { // Processo terminato con errore
+      console.error(`Errore durante l'enrollment: ${errorBuffer}`);
+      res.status(500).send(`Errore durante l'enrollment: ${errorBuffer}`);
     }
   });
-}); 
+});
+
+app.post('/identify', upload.single('file'), (req, res) => {
+  const uploadedFilePath = req.file.path;
+
+  console.log(`File ricevuto per identificazione: ${uploadedFilePath}`);
+
+  // Esegui script Python per identificare lo speaker
+  const pythonProcess = spawn(pythonPath, ['identify_speaker.py', uploadedFilePath]);
+
+  let resultBuffer = ""; // Buffer per accumulare i dati stdout
+  let errorBuffer = "";  // Buffer per accumulare i dati stderr
+
+  pythonProcess.stdout.on('data', (data) => {
+    resultBuffer += data.toString(); // Accumula i dati ricevuti
+  });
+
+  pythonProcess.stderr.on('data', (data) => {
+    errorBuffer += data.toString(); // Accumula eventuali errori
+  });
+
+  pythonProcess.on('close', (code) => {
+    if (code === 0) { // Processo terminato correttamente
+      try {
+        const parsedData = JSON.parse(resultBuffer.trim()); // Parse del risultato JSON
+        console.log(`Risultato identificazione: ${JSON.stringify(parsedData)}`);
+        res.status(200).json(parsedData); // Risposta al client
+      } catch (err) {
+        console.error("Errore durante il parsing della risposta Python:", err);
+        res.status(500).send("Errore durante l'elaborazione della risposta JSON.");
+      }
+    } else { // Processo terminato con errore
+      console.error(`Errore durante l'identificazione: ${errorBuffer}`);
+      res.status(500).send(`Errore durante l'identificazione: ${errorBuffer}`);
+    }
+  });
+});
 
 // Avvia il server
 app.listen(port, () => {
   console.log(`Server in ascolto su http://localhost:${port}`);
-
 });
