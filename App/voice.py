@@ -78,8 +78,8 @@ while exit_flag == True:
         if check_microphone():
             c = 0  # Contatore dei tentativi falliti
     
-            while True:
-
+            while exit_flag == True:
+                
                 #Ascolta l'audio
                 audio = listen_for_audio(DURATION_VAD, SAMPLE_RATE)
 
@@ -89,7 +89,7 @@ while exit_flag == True:
                     print("Voce rilevata!")
                     print("----------------------------------------\n")
             
-                    #Sezione Speaker Identification:
+                    #Sezione Speaker Identification:n
                     audio_sv = listen_for_audio(DURATION_VR, SAMPLE_RATE)
                     sd.wait()
 
@@ -120,75 +120,75 @@ while exit_flag == True:
                             #Sezione Face Verification
                             print("\nBentornato...")
                             exit_flag = False  # Esci dal loop
+                            break
                         
                         else:
                             print(f"\nSpeaker non riconosciuto con sufficiente accuratezza. (Score: {score})")
                             continue
                     else:
-                        print("\nSpeaker non riconosciuto.")
+                        #Incremento dei tentativi
+                        c += 1
+                        if c < 2:
+                            print(f"\nNessuna voce riconosciuta. Tentativo {c}/2. Riprovando...")
+                            continue  #Riprova
 
-                    #Incremento dei tentativi
-                    c += 1
-                    if c <= 2:
-                        print(f"\nNessuna voce riconosciuta. Tentativo {c}/2. Riprovando...")
-                        continue  # Riprova
-
-                    else:
-                        print("\n--------------------------------------------")
-                        print("Tentativi esauriti per l'identificazione.")
-                        print("--------------------------------------------")
-                        print("\nNew User?")
-                
-                        #Fase Enrollment
-                        max_attempts = 2  # Numero massimo di tentativi
-
-                        while max_attempts > 0:
-                            ans = input("\nDo you want to enroll? (Y/N): ")
-
-                            if (ans == "Y" or ans == "y"):
-                                print("\n--------------------------------------------")
-                                print("Inserire Key per Enrollment:")
-                                print("--------------------------------------------")
-
-                                key = input("Key: ")
-
-                                if (key == "pussy" or key == "dick"):
-                                    print("\n--------------------------------------------")
-                                    print("Chiave accettata. Procedo con l'enrollment...")
-                                    print("--------------------------------------------")
-                            
-                                    print("\nPhase-1: Voice...\n")
-                                    #Azione Voice
-                                    name = input("\nInserisci il tuo nome: ").strip()
-
-                                    #Funzione Enroll (Invia al server)
-                                    print("\nRegistrazione e invio al server...")
-                                    enroll(path_txt, name, enroll_path, DURATION_EN, SAMPLE_RATE, SERVER_URL)
-
-                                    print("\n--------------------------------------------")
-                                    print("Enrollment completato!")
-                                    print("--------------------------------------------")
-
-                                    break  # Esce dal ciclo enrollment
-
-                                else:
-                                    max_attempts -= 1
-                                    if max_attempts > 0:
-                                        print("\n--------------------------------------------")
-                                        print(f"\nChiave errata. Hai ancora {max_attempts} tentativi.")
-                                        print("--------------------------------------------")
-                                    
-                                    else:
-                                        print("\n--------------------------------------------")
-                                        print("\nHai esaurito tutti i tentativi. Accesso negato.")
-                                        print("--------------------------------------------")
-                            else:
-                                print("\n--------------------------------------------")   
-                                print("\nOperazione annullata.")
-                                print("--------------------------------------------")
-                                break
                         else:
-                            break  # Esco dal ciclo principale
+                            print("\n--------------------------------------------")
+                            print("Tentativi esauriti per l'identificazione.")
+                            print("--------------------------------------------")
+                            print("--------------------------------------------")
+                            print("\nNew User?")
+                
+                            #Fase Enrollment
+                            max_attempts = 2  # Numero massimo di tentativi
+
+                            while max_attempts > 0:
+                                ans = input("\nDo you want to enroll? (Y/N): ")
+
+                                if (ans == "Y" or ans == "y"):
+                                    print("\n--------------------------------------------")
+                                    print("Inserire Key per Enrollment:")
+                                    print("--------------------------------------------")
+
+                                    key = input("Key: ")
+
+                                    if (key == "pussy" or key == "dick"):
+                                        print("\n--------------------------------------------")
+                                        print("Chiave accettata. Procedo con l'enrollment...")
+                                        print("--------------------------------------------")
+                            
+                                        print("\nPhase-1: Voice...\n")
+                                        #Azione Voice
+                                        name = input("\nInserisci il tuo nome: ").strip()
+
+                                        #Funzione Enroll (Invia al server)
+                                        print("\nRegistrazione e invio al server...")
+                                        enroll(path_txt, name, enroll_path, DURATION_EN, SAMPLE_RATE, SERVER_URL)
+
+                                        print("\n--------------------------------------------")
+                                        print("Enrollment completato!")
+                                        print("--------------------------------------------")
+
+                                        break  # Esce dal ciclo enrollment
+
+                                    else:
+                                        max_attempts -= 1
+                                        if max_attempts > 0:
+                                            print("\n--------------------------------------------")
+                                            print(f"\nChiave errata. Hai ancora {max_attempts} tentativi.")
+                                            print("--------------------------------------------")
+                                    
+                                        else:
+                                            print("\n--------------------------------------------")
+                                            print("\nHai esaurito tutti i tentativi. Accesso negato.")
+                                            print("--------------------------------------------")
+                                else:
+                                    print("\n--------------------------------------------")   
+                                    print("\nOperazione annullata.")
+                                    print("--------------------------------------------")
+                                    break
+                            else:
+                                break  # Esco dal ciclo principale
                 else:
                     print("\n--------------------------------------------")
                     print("Nessuna voce rilevata. Ricomincio...")

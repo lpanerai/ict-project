@@ -1,3 +1,24 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+import torchvision.datasets as datasets
+import torchvision.transforms as transforms
+
+import numpy as np
+import sounddevice as sd
+import soundfile as sf
+import sys
+
+from silero_vad import get_speech_timestamps
+
+import requests
+import wave
+import time
+import json
+import os
+
 #Generic Functions:
 def print_menu():
     print("\n" + "="*40)
@@ -19,7 +40,7 @@ def vad_detect(audio, model, SAMPLE_RATE):
 
 def listen_for_audio(DURATION, SAMPLE_RATE):
     """Registra audio dal microfono per la durata specificata."""
-    print("\n--------------------------------------")
+    print("--------------------------------------")
     print("Ascoltando...")
 
     audio = sd.rec(int(DURATION * SAMPLE_RATE), samplerate=SAMPLE_RATE, channels=1, dtype='float32')
