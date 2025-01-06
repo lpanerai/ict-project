@@ -186,8 +186,8 @@ def enroll(file_path, name, output_dir, duration, sample_rate, server_url):
 
         # Salva il file audio localmente
         audio_file_name = os.path.join(output_dir, name, f"Ref_{name}_{chunk_number}.wav")
-        audio_data_int16 = (audio_data.flatten() * 32767).astype(np.int16)  # Conversione a int16
-        sf.write(audio_file_name, audio_data_int16, sample_rate)
+        #audio_data_int16 = (audio_data.flatten() * 32767).astype(np.int16)  # Conversione a int16
+        sf.write(audio_file_name, audio_data, sample_rate)
         print(f"File saved in: {audio_file_name}")
 
         # Invia il file audio al server
@@ -327,7 +327,7 @@ def recognize_face_live(threshold=0.6):
                     cv2.putText(frame, f"{username}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                     print(f"Utente riconosciuto: {username}")
                     user_found = True
-                    break
+                    return True
         
         if user_found:
             break

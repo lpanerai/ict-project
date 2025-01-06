@@ -16,7 +16,7 @@ DURATION_VAD = 3         #Ascolta per 3 secondi
 DURATION_VR = 5          #Ascolta per 5 secondi
 DURATION_EN = 35         #Ascolta per 30 secondi
 c = 0                    #Contatore SV
-exit_flag = True         #Metodo per terminare il ciclo
+exit_flag = True         #Metodo per terminare il ciclo 
 
 model, utils = torch.hub.load(
     repo_or_dir='snakers4/silero-vad',
@@ -42,6 +42,8 @@ def pipeline():
                     print("SpeakerRecognition: Utente riconosciuto")
                     if(faceRecognition()):
                         print("FaceRecognition: Utente riconosciuto")
+                        print("Accesso consentito! Benvenuto.")
+                        break
                     else:
                         print("FaceRecognition: Utente non riconosciuto")
                 else:
@@ -86,10 +88,15 @@ def faceRecognition():
     return recognize_face_live(threshold=0.6)
 
 def voice_enrollment():
-	return True
+    path_txt = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\enroll.txt"
+    path_dir = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Server\\uploads\\references\\"
+    enroll(path_txt,"Leonardo",path_dir,DURATION_EN, SAMPLE_RATE, SERVER_URL)
 
 def face_enrollment():
-    return enroll_user("Leonardo", "Dataset/People/Leonardo/Photos/Leonardo.jpg")
+    return enroll_user("Giorgio", "ict-project\\Dataset\\People\\Giorgio\\Photos\\Giorgio.jpg")
 
 if __name__ == "__main__":
-    pipeline()
+    #voice_enrollment()
+    #pipeline()
+    #face_enrollment()
+    faceRecognition()
