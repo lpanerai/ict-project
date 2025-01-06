@@ -1,0 +1,9 @@
+torch
+dlib
+pillow
+scipy
+opencv-python
+sounddevice
+soundfile
+silero-vad
+requests

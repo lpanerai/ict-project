@@ -6,6 +6,15 @@ from torch.utils.data import DataLoader
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
+#Face Enrollment
+import dlib
+from PIL import Image
+
+#Face Recognition
+import cv2
+from scipy.spatial.distance import cosine
+
+#Audio e Speech Recognition + Face Recognition
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
@@ -188,7 +197,7 @@ def enroll(file_path, name, output_dir, duration, sample_rate, server_url):
         #        data={"speaker": name}
         #    )
 
-        response = send_audio_name_to_server(audio_file_name, name ,SERVER_URL + "/enroll")
+        response = send_audio_name_to_server(audio_file_name, name ,server_url + "/enroll")
         print(f"Server Response: {response}")
 
         status, speaker = parse_server_response_enroll(response)
@@ -210,3 +219,124 @@ def enroll(file_path, name, output_dir, duration, sample_rate, server_url):
 
 #-------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------
+#Face Enrollment
+def enroll_user(username, image_file, save_path="ict-project\\Dataset\\People\\Embeddings"):
+    try:
+        # Percorso ai modelli pre-addestrati di dlib
+        path_predictor = '.venv\\Lib\\site-packages\\face_recognition_models\\models\\shape_predictor_68_face_landmarks.dat'
+        path_recognition = '.venv\\Lib\\site-packages\\face_recognition_models\\models\\dlib_face_recognition_resnet_model_v1.dat'
+
+        # Carica i modelli
+        detector = dlib.get_frontal_face_detector()
+        predictor = dlib.shape_predictor(path_predictor)
+        face_rec_model = dlib.face_recognition_model_v1(path_recognition)
+
+
+        # Usa Pillow per caricare l'immagine e convertirla in un array NumPy
+        img = Image.open(image_file).convert("RGB")
+        image = np.array(img)
+        
+        # Rileva i volti nell'immagine
+        dets = detector(image, 1)
+        if len(dets) != 1:
+            print("Errore: l'immagine deve contenere esattamente un volto.")
+            return False
+
+        # Calcola i punti di riferimento facciali
+        shape = predictor(image, dets[0])
+        
+        # Calcola l'embedding facciale
+        face_descriptor = face_rec_model.compute_face_descriptor(image, shape)
+
+        # Converte l'embedding in un array numpy
+        face_encoding = np.array(face_descriptor)
+        
+        # Salva l'embedding in un file npy
+        os.makedirs(save_path, exist_ok=True)
+        np.save(os.path.join(save_path, f"{username}.npy"), face_encoding)
+        print(f"Utente {username} registrato con successo!")
+        return True
+    except Exception as e:
+        print(f"Errore durante la registrazione dell'utente: {e}")
+        return False
+
+#-------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#Face Recognition
+def load_registered_faces(path="ict-project\\Dataset\\People\\Embeddings"):
+    """Carica gli embedding registrati da file .npy."""
+    embeddings = {}
+    for file in os.listdir(path):
+        if file.endswith(".npy"):
+            username = os.path.splitext(file)[0]
+            embeddings[username] = np.load(os.path.join(path, file))
+    return embeddings
+
+def recognize_face_live(threshold=0.6):
+    """Riconoscimento facciale live utilizzando solo `dlib` e similarità coseno."""
+    # Percorso ai modelli pre-addestrati di dlib
+    path_predictor = '.venv\\Lib\\site-packages\\face_recognition_models\\models\\shape_predictor_68_face_landmarks.dat'
+    path_recognition = '.venv\\Lib\\site-packages\\face_recognition_models\\models\\dlib_face_recognition_resnet_model_v1.dat'
+
+    # Inizializza i modelli
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor(path_predictor)
+    face_rec_model = dlib.face_recognition_model_v1(path_recognition)
+
+    # Carica gli embedding registrati
+    registered_faces = load_registered_faces()
+    print("Embeddings caricati:", registered_faces.keys())
+
+    # Avvia la webcam
+    cap = cv2.VideoCapture(0)  # 0 indica la webcam predefinita
+    #print("Premi 'q' per uscire.")
+
+    #Inizializzo la variabile user_found a False (serve per uscire dal ciclo while)
+    user_found = False
+
+    while True:
+        
+        # Leggi un fotogramma dalla webcam
+        ret, frame = cap.read()
+        if not ret:
+            print("Errore nell'acquisizione del video.")
+            break
+
+        # Converti il frame da BGR (OpenCV) a RGB (dlib)
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Rileva i volti nel frame
+        detections = detector(rgb_frame)
+
+        for det in detections:
+            # Trova i punti di riferimento del viso
+            shape = predictor(rgb_frame, det)
+            # Calcola gli embedding
+            face_embedding = np.array(face_rec_model.compute_face_descriptor(rgb_frame, shape))
+
+            # Confronta l'embedding con quelli registrati usando la similarità coseno
+            for username, registered_encoding in registered_faces.items():
+                similarity = 1 - cosine(registered_encoding, face_embedding)
+                print(f"Similarità con {username}: {similarity}")
+                if similarity > threshold:
+                    # Disegna un rettangolo attorno al volto riconosciuto
+                    left, top, right, bottom = det.left(), det.top(), det.right(), det.bottom()
+                    cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+                    cv2.putText(frame, f"{username}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                    print(f"Utente riconosciuto: {username}")
+                    user_found = True
+                    break
+        
+        if user_found:
+            break
+        
+        # Mostra il video live
+        cv2.imshow("Riconoscimento Facciale", frame)
+
+        # Esci con il tasto 'q'
+        #if cv2.waitKey(1) & 0xFF == ord('q'):
+        #   break
+
+    # Rilascia la webcam e chiudi le finestre
+    cap.release()
+    cv2.destroyAllWindows()
