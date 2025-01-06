@@ -50,7 +50,7 @@ def pipeline():
                 print("VAD: Utente non sta parlando")
 
 def VAD(audio,silero_vad,SAMPLE_RATE):
-    vad_detect(audio, silero_vad, SAMPLE_RATE)
+    return vad_detect(audio, silero_vad, SAMPLE_RATE)
 	
 def speekerRecognition():
     audio_sv = listen_for_audio(DURATION_VR, SAMPLE_RATE)
@@ -83,13 +83,13 @@ def speekerRecognition():
            return False
 
 def faceRecognition():
-    recognize_face_live(threshold=0.6)
+    return recognize_face_live(threshold=0.6)
 
 def voice_enrollment():
 	return True
 
 def face_enrollment():
-    enroll_user("Leonardo", "Dataset/People/Leonardo/Photos/Leonardo.jpg")
+    return enroll_user("Leonardo", "Dataset/People/Leonardo/Photos/Leonardo.jpg")
 
 if __name__ == "__main__":
     pipeline()
