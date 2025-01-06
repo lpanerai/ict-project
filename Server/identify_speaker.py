@@ -3,6 +3,7 @@ import json
 import numpy as np
 import torch
 import torchaudio
+import torchaudio.transforms as T
 from speechbrain.pretrained import SpeakerRecognition
 
 def remove_silence(waveform, threshold_db=-40):
