@@ -17,6 +17,7 @@ from scipy.spatial.distance import cosine
 #Audio e Speech Recognition + Face Recognition
 import numpy as np
 import sounddevice as sd
+import pyaudio
 import soundfile as sf
 import sys
 
@@ -55,9 +56,10 @@ def listen_for_audio(DURATION, SAMPLE_RATE):
     audio = sd.rec(int(DURATION * SAMPLE_RATE), samplerate=SAMPLE_RATE, channels=1, dtype='float32')
     sd.wait()  #Aspetta il termine della registrazione
     print("Recording Ended")
+    sf.write("output_filename.wav", audio, SAMPLE_RATE)
     print("--------------------------------------")
+    return (audio.flatten() * 32768).astype(np.int16)  # Conversione a int16
     
-    return (audio.flatten() * 32768).astype(np.int16)  # Converti in formato int16 per Silero
 
 def check_microphone():
     """Controlla la disponibilità del microfono."""
@@ -65,7 +67,7 @@ def check_microphone():
     for i, device in enumerate(devices):
         if device['max_input_channels'] > 0:
             print(f"Microfono trovato: {device['name']}")
-            return True
+        return True
     print("Nessun microfono disponibile!")
     return False
 
