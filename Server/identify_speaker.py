@@ -5,6 +5,20 @@ import torch
 import torchaudio
 from speechbrain.pretrained import SpeakerRecognition
 
+def remove_silence(waveform, threshold_db=-40):
+    # Calcola l'energia (potenza) del segnale
+    energy = torch.norm(waveform, dim=1)
+    # Applica una soglia per eliminare i silenzi
+    non_silent_indices = energy > torch.tensor(10**(threshold_db / 10), dtype=torch.float32)
+    waveform_cleaned = waveform[:, non_silent_indices]
+    return waveform_cleaned
+
+def remove_noise(waveform, sample_rate):
+    # Applicazione di un filtro bandpass (ad esempio, tra 300Hz e 3400Hz per la voce)
+    transform = T.BandpassFilter(low_freq=300, high_freq=3400, sample_rate=sample_rate)
+    return transform(waveform)
+
+
 #Threshold Valore
 THRESHOLD = 0.5
 
@@ -21,6 +35,9 @@ verification_model = SpeakerRecognition.from_hparams(
 waveform, sample_rate = torchaudio.load(uploaded_file)
 if sample_rate != 16000:
     waveform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)(waveform)
+
+waveform = remove_noise(waveform, sample_rate)
+waveform = remove_silence(waveform)
 
 # Calcola l'embedding del file caricato
 uploaded_embedding = verification_model.encode_batch(waveform).detach().cpu().numpy()
@@ -52,4 +69,3 @@ else:
 
 # Restituisci il risultato come JSON
 print(json.dumps({"Speaker": identified_speaker, "Score": max_score, "Identification": Idy}))
-
