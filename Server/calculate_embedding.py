@@ -2,7 +2,21 @@ import sys
 import json
 import torch
 import torchaudio
+import torchaudio.transforms as T
 from speechbrain.pretrained import SpeakerRecognition
+
+def remove_silence(waveform, threshold_db=-40):
+    # Calcola l'energia (potenza) del segnale
+    energy = torch.norm(waveform, dim=1)
+    # Applica una soglia per eliminare i silenzi
+    non_silent_indices = energy > torch.tensor(10**(threshold_db / 10), dtype=torch.float32)
+    waveform_cleaned = waveform[:, non_silent_indices]
+    return waveform_cleaned
+
+def remove_noise(waveform, sample_rate):
+    # Applicazione di un filtro bandpass (ad esempio, tra 300Hz e 3400Hz per la voce)
+    transform = T.BandpassFilter(low_freq=300, high_freq=3400, sample_rate=sample_rate)
+    return transform(waveform)
 
 try:
     # Percorso del file e nome dello speaker
@@ -22,6 +36,10 @@ try:
             waveform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)(waveform)    
     except Exception as e:
         raise ValueError(f"Errore durante la lettura del file audio: {e}")
+
+    
+    waveform = remove_noise(waveform, sample_rate)
+    waveform = remove_silence(waveform)
 
     # Calcola embedding
     try:
