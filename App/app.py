@@ -8,47 +8,55 @@ import os
 import numpy as np
 import tempfile
 from app_utils import extract_voice_embedding, extract_face_embedding  # Funzioni da implementare
+from pymongo import MongoClient
+from bson.binary import Binary
+from io import BytesIO
+
+# Connessione a MongoDB
+client = MongoClient("mongodb://localhost:27017/")  # Sostituire con il tuo URI di MongoDB
+db = client["app"]  # Nome del database
+user_collection = db["users"]  # Collezione per gli utenti
+embedding_collection = db["embeddings"]  # Collezione per gli embedding
 
 app = FastAPI()
+
 
 # Setup templates and static files
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 #app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
-# Placeholder for database (to replace with real DB integration)
-USER_DATABASE = {}
-EMBEDDING_DATABASE = {
-    "voice": {},
-    "face": {}
-}
-
 # Pydantic model for user registration
 class UserRegister(BaseModel):
     username: str
     password: str
 
+
+    
+USER_DATABASE = {}
+
 # Register Endpoint
 @app.post("/auth/register")
 def register(user: UserRegister):
-    if user.username in USER_DATABASE:
+    if user_collection.find_one({"username": user.username}):
         raise HTTPException(status_code=400, detail="User already exists.")
 
     # Salvataggio dell'utente
-    USER_DATABASE[user.username] = {
-        "password": user.password,
-        "voice_embeddings": [],
-        "face_embeddings": []
-    }
+    user_collection.insert_one({
+        "username": user.username,
+        "password": user.password
+    })
+
     print(f"User {user.username} registered.")
-    print(f"User database: {USER_DATABASE}")
 
     return {"message": "Registration successful. Welcome, " + user.username + "!"}
 
 # Login Page (Handled in Home)
 @app.post("/auth/login")
 def login(username: str = Form(...), password: str = Form(...), response: Response = None):
-    if username not in USER_DATABASE or USER_DATABASE[username]["password"] != password:
+    user = user_collection.find_one({"username": username})
+
+    if not user or user["password"] != password:
         raise HTTPException(status_code=401, detail="Invalid username or password.")
 
     # Return a success message as JSON
@@ -64,7 +72,7 @@ def logout(response: Response):
 # Voice Enrollment Endpoint
 @app.post("/enroll/voice")
 def enroll_voice(username: str = Form(...), file: UploadFile = File(...)):
-    if username not in USER_DATABASE:
+    if user_collection.find_one({"username": username}):
         raise HTTPException(status_code=404, detail="User not found.")
 
     if file.content_type not in ["audio/wav", "audio/mpeg"]:
@@ -81,20 +89,31 @@ def enroll_voice(username: str = Form(...), file: UploadFile = File(...)):
 
 # Face Enrollment Endpoint
 @app.post("/enroll/face")
-def enroll_face(username: str = Form(...), file: UploadFile = File(...)):
-    if username not in USER_DATABASE:
+def enroll_face(request: Request, file: UploadFile = File(...)):
+    username = request.cookies.get("username")
+    print(f"Username: {username}")
+
+    if not username:
+        raise HTTPException(status_code=401, detail="User not logged in.")
+    
+    if not user_collection.find_one({"username": username}):
         raise HTTPException(status_code=404, detail="User not found.")
 
     if file.content_type not in ["image/jpeg", "image/png"]:
         raise HTTPException(status_code=400, detail="Invalid file type.")
+    
+    file_content = file.file.read()
+    image_stream = BytesIO(file_content)
 
-    # Save file temporarily and extract embedding
-    with tempfile.NamedTemporaryFile(delete=True) as temp:
-        temp.write(file.file.read())
-        embedding = extract_face_embedding(temp.name)
-
+    # Estrai l'embedding
+    embedding = extract_face_embedding(image_stream)
+    
     # Save face embedding
-    USER_DATABASE[username]["face_embeddings"].append(np.array(embedding))
+    embedding_collection.insert_one({
+        "username": username,
+        "type": "face",
+        "embedding": Binary(np.array(embedding).tobytes())  # Salva come binario
+    })
     return {"message": "Face embedding enrolled."}
 
 # first page

@@ -60,8 +60,7 @@ def speekerRecognition():
     return identify_speaker(output_emb_dir,input_emb_dir, DURATION_VR, SAMPLE_RATE, threshold=0.6)
 
 def faceRecognition():
-    input_embedding="C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\Embedding\\Face\\"
-    return recognize_face_live(input_embedding,threshold=0.90)
+    return recognize_face_live(threshold=0.85)
 
 def voice_enrollment(username):
     path_txt = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\enroll.json"
@@ -80,7 +79,7 @@ def face_enrollment(username):
 if __name__ == "__main__":
     #voice_enrollment(username="Leonardo")
     #speekerRecognition()
-    pipeline()
+    #pipeline()
     #face_enrollment("Leonardo")
-    #faceRecognition()
+    faceRecognition()
     

@@ -34,6 +34,13 @@ import time
 import json
 import os
 
+from pymongo import MongoClient
+
+# Connessione a MongoDB
+client = MongoClient("mongodb://localhost:27017/")  # Sostituire con il tuo URI di MongoDB
+db = client["app"]  # Nome del database
+user_collection = db["users"]  # Collezione per gli utenti
+embedding_collection = db["embeddings"]  # Collezione per gli embedding
 
 #-------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------
@@ -285,13 +292,28 @@ def load_registered_faces(path="ict-project\\Dataset\\People\\Embedding\\Face"):
             embeddings[username] = np.load(os.path.join(path, file))
     return embeddings
 
-def recognize_face_live(input_embedding,threshold):
+def load_registered_faces_from_db(embedding_collection):
+    """Carica gli embedding registrati dal database."""
+    embeddings = {}
+    
+    # Recupera tutti i documenti con type "face"
+    cursor = embedding_collection.find({"type": "face"})
+    
+    for record in cursor:
+        username = record["username"]
+        # Decodifica l'embedding salvato come binario
+        embedding = np.frombuffer(record["embedding"], dtype=np.float32)
+        embeddings[username] = embedding
+    print("Embeddings caricati presi dal db:", embeddings.keys())
+    return embeddings
+
+def recognize_face_live(threshold):
     """Riconoscimento facciale live utilizzando FaceNet e similarità coseno."""
     # Inizializza il modello FaceNet
     embedder = FaceNet()
 
     # Carica gli embedding registrati
-    registered_faces = load_registered_faces(input_embedding)
+    registered_faces = load_registered_faces_from_db(embedding_collection)
     print("Embeddings caricati:", registered_faces.keys())
 
     # Avvia la webcam
