@@ -34,16 +34,6 @@ import time
 import json
 import os
 
-#Generic Functions:
-def print_menu():
-    print("\n" + "="*40)
-    print("   Welcome to the System: Figo-32cm")
-    print("="*40)
-    print("\nPlease, choose an option:")
-    print(" 1) System Activation")
-    print(" 2) New User Enrollment")
-    print(" 3) End the Program")
-    print("\n" + "="*40)
 
 #-------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------
