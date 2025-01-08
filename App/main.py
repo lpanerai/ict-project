@@ -25,8 +25,9 @@ model, utils = torch.hub.load(
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
 
-model_save_path = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Models\\silero_vad_model.pth"
-torch.save(model.state_dict(), model_save_path)
+#model_save_path = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Models\\silero_vad_model.pth"
+#torch.save(model.state_dict(), model_save_path)
+
 silero_vad = model.to(device)
 
 def pipeline():
@@ -79,7 +80,7 @@ def face_enrollment(username):
 if __name__ == "__main__":
     #voice_enrollment(username="Leonardo")
     #speekerRecognition()
-    #pipeline()
+    pipeline()
     #face_enrollment("Leonardo")
-    faceRecognition()
+    #faceRecognition()
     
