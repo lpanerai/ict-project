@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Login</title>
+    <script>
+        async function submitLoginForm(event) {
+            event.preventDefault();
+    
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+    
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    'username': username,
+                    'password': password
+                })
+            });
+    
+            const result = await response.json();
+    
+            if (response.ok) {
+                alert(result.message);  // Success message
+                document.cookie = `username=${username}; path=/`;
+                // Esegui il redirect dopo che l'utente ha chiuso l'alert
+                window.location.href = "/home";  // Redirect to home page
+            } else {
+                alert(result.detail);  // Error message from the server
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Login</h1>
+    </header>
+    <main>
+        <form onsubmit="submitLoginForm(event)">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <button type="submit">Login</button>
+        </form>
+    </main>
+    <button onclick="window.location.href = '/register'">Go to Register</button>
+</body>
+</html>

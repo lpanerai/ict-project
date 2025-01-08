@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment</title>
+</head>
+<body>
+    <h1>Welcome, {{ username }}!</h1>
+
+    <h2>Enroll Voice</h2>
+    <form action="/enroll/voice" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="username" value="{{ username }}">
+        <label for="file">Upload Voice File:</label>
+        <input type="file" name="file" required>
+        <br>
+        <button type="submit">Enroll Voice</button>
+    </form>
+
+    <h2>Enroll Face</h2>
+    <form action="/enroll/face" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="username" value="{{ username }}">
+        <label for="file">Upload Face Image:</label>
+        <input type="file" name="file" required>
+        <br>
+        <button type="submit">Enroll Face</button>
+    </form>
+</body>
+</html>
