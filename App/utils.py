@@ -5,10 +5,15 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+import torchaudio.transforms as T
+import torchaudio
+from speechbrain.inference.speaker import EncoderClassifier
+from speechbrain.inference.speaker import SpeakerRecognition
 
 #Face Enrollment
 import dlib
 from PIL import Image
+from keras_facenet import FaceNet
 
 #Face Recognition
 import cv2
@@ -135,124 +140,140 @@ def parse_server_response_enroll(response):
 
 #-------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------
-#Enrollment Pt.1
-#Lettura File.txt e invio server
-def read_text_file_in_chunks(file_path):
-    """
-    Legge un file di testo e restituisce un generatore che fornisce paragrafi.
-    """
-    with open(file_path, 'r', encoding='utf-8') as file:
-        paragraph = []
-        for line in file:
-            if line.strip():  # Se la riga non è vuota, aggiungila al paragrafo corrente
-                paragraph.append(line.strip())
-            else:
-                if paragraph:  # Se il paragrafo contiene testo, restituiscilo
-                    yield " ".join(paragraph)
-                    paragraph = []
-        if paragraph:  # Restituisci l'ultimo paragrafo, se esiste
-            yield " ".join(paragraph)
-
-def enroll(file_path, name, output_dir, duration, sample_rate, server_url):
+#Enrollment Voice
+def enroll_user_voice(file_path, username, output_voice_dir, output_emb_dir, duration, sample_rate, num_recording):
     """
     Funzione di enrollment: salva file audio di riferimento e li invia al server.
     """
-    # Crea una cartella specifica per lo speaker
-    speaker_dir = os.path.join(output_dir, name)
-    os.makedirs(speaker_dir, exist_ok=True)
 
-    # Leggi il file di testo in blocchi
-    text_chunks = read_text_file_in_chunks(file_path)
-    chunk_number = 1
+    print(f"\n--- Block Number: {num_recording} ---")
+    file_json= json.load(open(file_path))
+    print(str(file_json[f"chunk{num_recording}"]))
 
-    for chunk in text_chunks:
-        print(f"\n--- Block Number: {chunk_number} ---")
-
-        #Suddivide il testo in base ai punti e aggiunge a capo
-        sentences = chunk.split('.')
-        formatted_text = "\n".join(sentence.strip() + '.' for sentence in sentences if sentence.strip())
-
-        print(formatted_text)
-        
-        #Countdown
-        for i in range(3, 0, -1):
-            print(f"{i}")
-            time.sleep(2)
-
-        print("\nStart the recording...")
-
-        # Registra audio
-        audio_data = listen_for_audio(duration, sample_rate)
-
-        # Salva il file audio localmente
-        audio_file_name = os.path.join(output_dir, name, f"Ref_{name}_{chunk_number}.wav")
-        #audio_data_int16 = (audio_data.flatten() * 32767).astype(np.int16)  # Conversione a int16
-        sf.write(audio_file_name, audio_data, sample_rate)
-        print(f"File saved in: {audio_file_name}")
-
-        # Invia il file audio al server
-        #print(f"\nInvio del file {audio_file_name} al server per l'enrollment...")
-        #with open(audio_file_name, 'rb') as audio_file:
-        #    response = requests.post(
-        #        url=f"{server_url}/enroll",
-        #        files={"file": audio_file},
-        #        data={"speaker": name}
-        #    )
-
-        response = send_audio_name_to_server(audio_file_name, name ,server_url + "/enroll")
-        print(f"Server Response: {response}")
-
-        status, speaker = parse_server_response_enroll(response)
-        print(status)
-        print(speaker)
-
-        #if response.status_code == 200:
-        #    print(f"Server Response: {response.text}")
-        #else:
-        #    print(f"Errore durante l'invio al server: {response.status_code} - {response.text}")
-
-        # Avanza al prossimo blocco di testo
-        chunk_number += 1
-
-        # Pausa tra le registrazioni
+    #Countdown
+    for i in range(3, 0, -1):
+        print(f"{i}")
         time.sleep(2)
 
-    print("\nPhase-1: Voice Enrollment --> COMPLETED")
+    print("\nStart the recording...")
+
+    # Registra audio
+    audio_data = listen_for_audio(duration, sample_rate)
+
+    # Salva il file audio localmente
+    
+    audio_file_path= os.path.join(output_voice_dir, f"Ref_{username}_{num_recording}.wav")
+    #audio_data_int16 = (audio_data.flatten() * 32767).astype(np.int16)  # Conversione a int16
+    sf.write(audio_file_path, audio_data,sample_rate)
+    print(f"File saved in: {audio_file_path}")
+
+    calculate_embedding(audio_file_path,output_emb_dir,username,num_recording)
+
+    print(f"Utente {username} registrato con successo!")
+
+    print(f"\nPhase-{num_recording}: Voice Enrollment --> COMPLETED")
+
+def calculate_embedding(file_path,output_dir, username, num_recording):
+    """
+    Funzione per calcolare l'embedding di un file audio e salvarlo.
+    """
+    # Carica il modello di riconoscimento speaker
+    classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+
+    # Carica il file audio
+    waveform, sample_rate = torchaudio.load(file_path)
+    if sample_rate != 16000:
+        waveform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)(waveform)
+
+    # Calcola l'embedding del file audio
+    embedding = classifier.encode_batch(waveform)
+
+    #Salva l'embedding in un file npy
+    os.makedirs(output_dir, exist_ok=True)
+    np.save(os.path.join(output_dir, f"{username}_{num_recording}.npy"), embedding)
+    return True
+
+def identify_speaker(file_path,input_emb_dir, DURATION_VR, SAMPLE_RATE, threshold):
+    """
+    Funzione per identificare lo speaker in un file audio.
+    """
+    verification = SpeakerRecognition.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+    
+    audio_sv = listen_for_audio( DURATION_VR, SAMPLE_RATE)
+    sd.wait()
+    temp_filepath = os.path.join(file_path,"temp_audio.wav")
+    save_audio_to_file(audio_sv, temp_filepath, SAMPLE_RATE)
+
+    calculate_embedding(temp_filepath,file_path,"temp",1)
+
+    #Invio al server per identificazione
+    print("\n------------------------------------------")
+    print("Registrazione salvata, Inizio identificazione...")
+    print("------------------------------------------")
+    
+    registered_voices= load_registered_voices(input_emb_dir)
+    print("Embeddings caricati:", registered_voices.keys())
+    
+    max_score = float('-inf')  # Punteggio massimo iniziale
+    best_match = None  # Username associato al punteggio massimo
+    
+    tmp_np_path= os.path.join(file_path,"temp_1.npy")
+    tmp_np=np.load(tmp_np_path)
+    tmp_torch= torch.tensor(tmp_np)
+
+    # Identifica lo speaker confrontando con gli embedding registrati
+    for username, registered_encoding in registered_voices.items():
+        tmp_torch_enrolled_user= torch.tensor(registered_encoding)
+        
+        score = verification.similarity(tmp_torch,tmp_torch_enrolled_user).item()
+        print(f"Utente: {username}, Score: {score}")
+        
+        # Aggiorna il punteggio massimo se necessario
+        if score > max_score :
+            max_score = score
+            best_match = username
+
+    # Stampa l'username con il punteggio più alto e maggiore della soglia
+    print("\n------------------------------------------")
+    if (best_match is not None) and (max_score > threshold): 
+        print(f"Speaker identificato: {best_match} con score: {max_score}")
+        return True
+    else:
+        print("Nessuno speaker identificato.")
+        return False
+    print("------------------------------------------")
+    
+
+def load_registered_voices(path):
+    """Carica gli embedding registrati da file .npy."""
+    embeddings = {}
+    for file in os.listdir(path):
+        if file.endswith(".npy"):
+            username = os.path.splitext(file)[0]
+            embeddings[username] = np.load(os.path.join(path, file))
+    return embeddings
 
 #-------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------
 #Face Enrollment
-def enroll_user(username, image_file, save_path="ict-project\\Dataset\\People\\Embeddings"):
+def enroll_user_face(username, image_file, save_path):
     try:
-        # Percorso ai modelli pre-addestrati di dlib
-        path_predictor = '.venv\\Lib\\site-packages\\face_recognition_models\\models\\shape_predictor_68_face_landmarks.dat'
-        path_recognition = '.venv\\Lib\\site-packages\\face_recognition_models\\models\\dlib_face_recognition_resnet_model_v1.dat'
+        # Inizializza il modello FaceNet
+        embedder = FaceNet()
 
-        # Carica i modelli
-        detector = dlib.get_frontal_face_detector()
-        predictor = dlib.shape_predictor(path_predictor)
-        face_rec_model = dlib.face_recognition_model_v1(path_recognition)
-
-
-        # Usa Pillow per caricare l'immagine e convertirla in un array NumPy
+        # Carica l'immagine con Pillow
         img = Image.open(image_file).convert("RGB")
         image = np.array(img)
-        
-        # Rileva i volti nell'immagine
-        dets = detector(image, 1)
-        if len(dets) != 1:
-            print("Errore: l'immagine deve contenere esattamente un volto.")
+
+        # Ottieni gli embedding con FaceNet
+        face_embeddings = embedder.embeddings([image])
+        if len(face_embeddings) == 0:
+            print("Errore: nessun volto rilevato nell'immagine.")
             return False
 
-        # Calcola i punti di riferimento facciali
-        shape = predictor(image, dets[0])
-        
-        # Calcola l'embedding facciale
-        face_descriptor = face_rec_model.compute_face_descriptor(image, shape)
+        # Ottieni il primo embedding (poiché è garantito che ci sia solo un volto nell'immagine)
+        face_encoding = face_embeddings[0]
 
-        # Converte l'embedding in un array numpy
-        face_encoding = np.array(face_descriptor)
-        
         # Salva l'embedding in un file npy
         os.makedirs(save_path, exist_ok=True)
         np.save(os.path.join(save_path, f"{username}.npy"), face_encoding)
@@ -265,7 +286,7 @@ def enroll_user(username, image_file, save_path="ict-project\\Dataset\\People\\E
 #-------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------
 #Face Recognition
-def load_registered_faces(path="ict-project\\Dataset\\People\\Embeddings"):
+def load_registered_faces(path="ict-project\\Dataset\\People\\Embedding\\Face"):
     """Carica gli embedding registrati da file .npy."""
     embeddings = {}
     for file in os.listdir(path):
@@ -274,71 +295,60 @@ def load_registered_faces(path="ict-project\\Dataset\\People\\Embeddings"):
             embeddings[username] = np.load(os.path.join(path, file))
     return embeddings
 
-def recognize_face_live(threshold=0.6):
-    """Riconoscimento facciale live utilizzando solo `dlib` e similarità coseno."""
-    # Percorso ai modelli pre-addestrati di dlib
-    path_predictor = '.venv\\Lib\\site-packages\\face_recognition_models\\models\\shape_predictor_68_face_landmarks.dat'
-    path_recognition = '.venv\\Lib\\site-packages\\face_recognition_models\\models\\dlib_face_recognition_resnet_model_v1.dat'
-
-    # Inizializza i modelli
-    detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor(path_predictor)
-    face_rec_model = dlib.face_recognition_model_v1(path_recognition)
+def recognize_face_live(input_embedding,threshold):
+    """Riconoscimento facciale live utilizzando FaceNet e similarità coseno."""
+    # Inizializza il modello FaceNet
+    embedder = FaceNet()
 
     # Carica gli embedding registrati
-    registered_faces = load_registered_faces()
+    registered_faces = load_registered_faces(input_embedding)
     print("Embeddings caricati:", registered_faces.keys())
 
     # Avvia la webcam
     cap = cv2.VideoCapture(0)  # 0 indica la webcam predefinita
-    #print("Premi 'q' per uscire.")
+    print("Premi 'q' per uscire.")
 
-    #Inizializzo la variabile user_found a False (serve per uscire dal ciclo while)
-    user_found = False
+    is_user_recognized = False
 
     while True:
-        
         # Leggi un fotogramma dalla webcam
         ret, frame = cap.read()
         if not ret:
             print("Errore nell'acquisizione del video.")
             break
 
-        # Converti il frame da BGR (OpenCV) a RGB (dlib)
+        # Converti il frame in RGB per FaceNet
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        # Mostra il video live
+        cv2.imshow("Riconoscimento Facciale", frame)
 
-        # Rileva i volti nel frame
-        detections = detector(rgb_frame)
+        # Ottieni gli embedding per il frame attuale
+        face_embeddings = embedder.embeddings([rgb_frame])
 
-        for det in detections:
-            # Trova i punti di riferimento del viso
-            shape = predictor(rgb_frame, det)
-            # Calcola gli embedding
-            face_embedding = np.array(face_rec_model.compute_face_descriptor(rgb_frame, shape))
-
+        for face_embedding in face_embeddings:
             # Confronta l'embedding con quelli registrati usando la similarità coseno
             for username, registered_encoding in registered_faces.items():
                 similarity = 1 - cosine(registered_encoding, face_embedding)
                 print(f"Similarità con {username}: {similarity}")
                 if similarity > threshold:
                     # Disegna un rettangolo attorno al volto riconosciuto
-                    left, top, right, bottom = det.left(), det.top(), det.right(), det.bottom()
+                    left, top, right, bottom = 50, 50, 150, 150  # Aggiusta le coordinate
                     cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
                     cv2.putText(frame, f"{username}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                     print(f"Utente riconosciuto: {username}")
-                    user_found = True
-                    return True
-        
-        if user_found:
-            break
-        
-        # Mostra il video live
-        cv2.imshow("Riconoscimento Facciale", frame)
+                    is_user_recognized = True
 
         # Esci con il tasto 'q'
-        #if cv2.waitKey(1) & 0xFF == ord('q'):
-        #   break
-
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        
+        if is_user_recognized:
+            # Rilascia la webcam e chiudi le finestre
+            cap.release()
+            return True
     # Rilascia la webcam e chiudi le finestre
     cap.release()
     cv2.destroyAllWindows()
+
+    

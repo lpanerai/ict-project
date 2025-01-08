@@ -7,7 +7,6 @@ from silero_vad import get_speech_timestamps
 #Speaker Rec.
 #Comandi per esecuzione:
 #Eseguire il server in Bash: cmd --> node server.js
-SERVER_URL = "http://localhost:3000/"
 
 #MAIN -- Loop Vocale
 #Configurazione microfono
@@ -55,48 +54,32 @@ def VAD(audio,silero_vad,SAMPLE_RATE):
     return vad_detect(audio, silero_vad, SAMPLE_RATE)
 	
 def speekerRecognition():
-    audio_sv = listen_for_audio(DURATION_VR, SAMPLE_RATE)
-    sd.wait()
-    temp_filename = "temp_audio.wav"
-    save_audio_to_file(audio_sv, temp_filename, SAMPLE_RATE)
-
-    #Invio al server per identificazione
-    print("\n------------------------------------------")
-    print("Invio al server per identificazione...")
-    print("------------------------------------------")
-    response = send_audio_to_server(temp_filename, SERVER_URL + "/identify")
-
-    print(f"\nRisposta del server: {response}")
-    speaker_name, score, Idy = parse_server_response(response)
-    print(f"Score: {score}, Idy: {Idy}")
-
-    if Idy == "Allowed":
-        if score >= 0.5:  # Soglia di riconoscimento
-            print("\n------------------------------------------")
-            print(f"Accesso consentito! Benvenuto, {speaker_name}.")
-            print("------------------------------------------")
-            return True
-        else:
-            print("\n------------------------------------------")
-            print("Accesso negato! Utente non riconosciuto.")
-            print("------------------------------------------")
-            return False
-    else:
-           return False
+    output_emb_dir = f"C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\"
+    input_emb_dir = f"C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\Embedding\\Voice\\"
+    return identify_speaker(output_emb_dir,input_emb_dir, DURATION_VR, SAMPLE_RATE, threshold=0.6)
 
 def faceRecognition():
-    return recognize_face_live(threshold=0.6)
+    input_embedding="C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\Embedding\\Face\\"
+    return recognize_face_live(input_embedding,threshold=0.90)
 
-def voice_enrollment():
-    path_txt = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\enroll.txt"
-    path_dir = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Server\\uploads\\references\\"
-    enroll(path_txt,"Leonardo",path_dir,DURATION_EN, SAMPLE_RATE, SERVER_URL)
+def voice_enrollment(username):
+    path_txt = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\enroll.json"
+    output_emb_dir = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\Embedding\\Voice\\"
+    output_voice_dir = f"C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\{username}\\Voice\\"
+    enroll_user_voice(path_txt,username,output_voice_dir, output_emb_dir ,DURATION_EN, SAMPLE_RATE, num_recording=1)
+    enroll_user_voice(path_txt,username ,output_voice_dir, output_emb_dir, DURATION_EN, SAMPLE_RATE, num_recording=2)
+    enroll_user_voice(path_txt,username,output_voice_dir, output_emb_dir, DURATION_EN, SAMPLE_RATE, num_recording=3)
+    
 
-def face_enrollment():
-    return enroll_user("Giorgio", "ict-project\\Dataset\\People\\Giorgio\\Photos\\Giorgio.jpg")
+def face_enrollment(username):
+    image_path=f"C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\{username}\\Photos\\{username}.jpg"
+    output_emb_dir="C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\Embedding\\Face\\"
+    return enroll_user_face(username, image_path, output_emb_dir)
 
 if __name__ == "__main__":
-    #voice_enrollment()
+    #voice_enrollment(username="Leonardo")
+    #speekerRecognition()
     #pipeline()
-    #face_enrollment()
+    #face_enrollment("Leonardo")
     faceRecognition()
+    
