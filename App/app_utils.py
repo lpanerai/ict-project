@@ -1,11 +1,60 @@
 from PIL import Image
+import ffmpeg.utils
 import numpy as np
 from keras_facenet import FaceNet
 from mtcnn import MTCNN
 import cv2
+import torch
+import soundfile as sf
+from speechbrain.inference.speaker import EncoderClassifier
+import torchaudio.transforms as T
+import torchaudio
+from io import BytesIO
+import io
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+import scipy
+import wave
+import ffmpeg
 
-def extract_voice_embedding():
-    return True
+def extract_voice_embedding(audio_bytes):
+    """
+    Extract voice embedding from audio bytes using SpeechBrain's ECAPA-TDNN model.
+    
+    Args:
+        audio_bytes (bytes): Raw audio file bytes
+        
+    Returns:
+        numpy.ndarray: Voice embedding vector
+        
+    Raises:
+        Exception: If audio processing or embedding extraction fails
+    """
+    
+    try:
+        
+        # Carica il modello di riconoscimento speaker
+        classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+
+        
+        # Convert bytes directly to tensor using torchaudio
+        waveform, sample_rate = torchaudio.load(audio_bytes)
+            
+        # Resample to 16kHz if needed
+        if sample_rate != 16000:
+            waveform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)(waveform)
+
+        
+        # Extract embedding
+        with torch.no_grad():
+            embedding = classifier.encode_batch(waveform)
+            
+        # Convert to numpy and return first embedding
+        return embedding
+        
+    except Exception as e:
+        print(f"Error extracting voice embedding: {str(e)}")
+        raise Exception(f"Voice embedding extraction failed: {str(e)}")
+    
 
 def extract_face_embedding(image_file):
     try:

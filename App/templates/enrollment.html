@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enrollment</title>
     <script>
+
+        // Funzione per verificare lo stato dell'embedding facciale
         async function checkFaceStatus() {
             let response = await fetch('/check/face');
             let result = await response.json();
@@ -20,6 +22,7 @@
             }
         }
 
+        // Funzione per inviare il modulo di iscrizione facciale
         async function submitEnrollForm(event) {
             event.preventDefault();
             toggleLoading("faceForm", true);
@@ -41,6 +44,7 @@
             }
         }
 
+        // Funzione per modificare l'embedding facciale
         async function modifyEmbedding(event) {
             event.preventDefault();
             toggleLoading("modifyFaceForm", true);
@@ -62,6 +66,7 @@
             }
         }
 
+        // Funzione per eliminare l'embedding facciale
         async function deleteFaceEmbedding(event) {
             event.preventDefault();
             let button = document.getElementById("deleteFaceButton");
@@ -84,6 +89,7 @@
             }
         }
 
+        // Funzione per gestire il caricamento
         function toggleLoading(formId, isLoading) {
             let form = document.getElementById(formId);
             let button = form.querySelector("button");
@@ -98,11 +104,86 @@
             }
         }
 
+        // Inizializza lo stato dell'utente
         document.addEventListener("DOMContentLoaded", checkFaceStatus);
     </script>
 </head>
 <body>
     <h1>Welcome, {{ username }}!</h1>
+
+    <h1>Record and Upload Audio</h1>
+
+    <!-- Buttons for starting and stopping recording -->
+    <button id="start-recording">Start Recording</button>
+    <button id="stop-recording" disabled>Stop Recording</button>
+
+    <!-- Audio player to play the recorded audio -->
+    <audio id="audio-player" controls></audio>
+
+    <script>
+        let recorder;
+        let audioChunks = [];
+        let audioBlob;
+
+        const startButton = document.getElementById("start-recording");
+        const stopButton = document.getElementById("stop-recording");
+        const audioPlayer = document.getElementById("audio-player");
+
+        // Start recording audio when the button is clicked
+        startButton.addEventListener("click", async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            recorder = new MediaRecorder(stream);
+            
+            // Collect the recorded audio chunks
+            recorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            // When recording stops, create a Blob and send it to the server
+            recorder.onstop = () => {
+                audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                audioPlayer.src = URL.createObjectURL(audioBlob);
+                sendAudioToBackend(audioBlob);
+            };
+
+            recorder.start();
+            startButton.disabled = true;
+            stopButton.disabled = false;
+        });
+
+        // Stop recording when the button is clicked
+        stopButton.addEventListener("click", () => {
+            recorder.stop();
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        });
+
+        // Function to send the audio Blob to the backend as FormData
+        async function sendAudioToBackend(blob) {
+            const formData = new FormData();
+            formData.append("audio", blob, "audio.webm");
+
+            const response = await fetch("http://localhost:5000/enroll/voice", {
+                method: "POST",
+                body: formData,
+            });
+            let result = await response.json();
+            if (response.ok) {
+                const audioBlob = await response.blob(); // Get WAV file
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                // Create an <audio> element to play the WAV file
+                const audioPlayer = document.createElement("audio");
+                audioPlayer.src = audioUrl;
+                audioPlayer.controls = true;
+                document.body.appendChild(audioPlayer);
+
+                console.log("WAV file received successfully");
+            } else {
+                console.error("Conversion failed:", await response.text());
+            }
+        }
+    </script>
 
     <!-- Sezione Enroll Face -->
     <div id="enrollFaceSection">

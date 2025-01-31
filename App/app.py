@@ -1,16 +1,18 @@
 from fastapi import FastAPI, Form, File, UploadFile, HTTPException, Depends, Response, Cookie
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
 from fastapi.requests import Request
+from typing import List
 from pydantic import BaseModel
 import os
 import numpy as np
-import tempfile
 from app_utils import extract_voice_embedding, extract_face_embedding  # Funzioni da implementare
 from pymongo import MongoClient
 from bson.binary import Binary
 from io import BytesIO
+from fastapi.middleware.cors import CORSMiddleware
+import io
+from pydub import AudioSegment
 
 # Connessione a MongoDB
 client = MongoClient("mongodb://localhost:27017/")  # Sostituire con il tuo URI di MongoDB
@@ -68,25 +70,60 @@ def logout(response: Response):
     response = RedirectResponse("/", status_code=302)
     response.delete_cookie(key="username")
     return response
-
-# Voice Enrollment Endpoint
+    
 @app.post("/enroll/voice")
-def enroll_voice(username: str = Form(...), file: UploadFile = File(...)):
-    if user_collection.find_one({"username": username}):
-        raise HTTPException(status_code=404, detail="User not found.")
+async def enroll_voice(
+    request: Request,
+    audio: UploadFile = File(...),  # Usa il nome del campo correttamente
+):
+    try:
+        # Estrai username dalla richiesta
+        username = request.cookies.get("username")
+        
+        if not username:
+            raise HTTPException(status_code=404, detail="Username non trovato nei cookies.")
+        
+        # Verifica se l'utente esiste nel database
+        if not user_collection.find_one({"username": username}):
+            raise HTTPException(status_code=404, detail="User not found.")
+        
+        # Verifica il tipo del file audio
+        if audio.content_type not in ["audio/webm"]:
+            raise HTTPException(status_code=400, detail="Invalid file type. Only WAV files are allowed.")
 
-    if file.content_type not in ["audio/wav", "audio/mpeg"]:
-        raise HTTPException(status_code=400, detail="Invalid file type.")
+        # Leggi il contenuto del file audio
+        # Read the uploaded file into a BytesIO buffer
+        audio_bytes = await audio.read()
+        audio_stream = io.BytesIO(audio_bytes)
 
-    # Save file temporarily and extract embedding
-    with tempfile.NamedTemporaryFile(delete=True) as temp:
-        temp.write(file.file.read())
-        embedding = extract_voice_embedding(temp.name)
+        # Load the WebM audio using pydub
+        audio_segment = AudioSegment.from_file(audio_stream, format="webm")
 
-    # Save voice embedding
-    USER_DATABASE[username]["voice_embeddings"].append(np.array(embedding))
-    return {"message": "Voice embedding enrolled."}
+        # Convert to WAV
+        wav_buffer = io.BytesIO()
+        audio_segment.export(wav_buffer, format="wav")
+        wav_buffer.seek(0)  # Reset buffer position
 
+        # Save to disk (Optional, for debugging)
+        with open(f"{BASE_DIR}/converted_audio.wav", "wb") as f:
+            f.write(wav_buffer.getbuffer())
+
+        # Esegui l'estrazione dell'embedding (sostituire con la tua funzione di estrazione)
+        embedding = extract_voice_embedding(f"{BASE_DIR}/converted_audio.wav")  # Funzione da implementare
+        print(f"Embedding: {embedding}")
+
+        # Salva l'embedding nel database
+        embedding_collection.insert_one({
+            "username": username, 
+            "type": "voice", 
+            "embedding": Binary(np.array(embedding).tobytes())  # Memorizza come binario
+        })
+
+        return {"message": f"Voice recording successfully saved for {username}!"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+       
 # Face Enrollment Endpoint
 @app.post("/enroll/face")
 async def enroll_face(request: Request, file: UploadFile = File(...)):
