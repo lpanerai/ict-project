@@ -1,29 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enrollment</title>
+    <script>
+        async function checkFaceStatus() {
+            let response = await fetch('/check/face');
+            let result = await response.json();
+
+            if (result.has_embedding) {
+                document.getElementById("enrollFaceSection").style.display = "none";
+                document.getElementById("modifyFaceSection").style.display = "block";
+                document.getElementById("deleteFaceButton").style.display = "block";
+            } else {
+                document.getElementById("enrollFaceSection").style.display = "block";
+                document.getElementById("modifyFaceSection").style.display = "none";
+                document.getElementById("deleteFaceButton").style.display = "none";
+            }
+        }
+
+        async function submitEnrollForm(event) {
+            event.preventDefault();
+            toggleLoading("faceForm", true);
+
+            let formData = new FormData(document.getElementById("faceForm"));
+            let response = await fetch('/enroll/face', {
+                method: 'POST',
+                body: formData
+            });
+
+            let result = await response.json();
+            toggleLoading("faceForm", false);
+
+            if (response.ok) {
+                alert(result.message);
+                checkFaceStatus();
+            } else {
+                alert("Errore: " + result.detail);
+            }
+        }
+
+        async function modifyEmbedding(event) {
+            event.preventDefault();
+            toggleLoading("modifyFaceForm", true);
+
+            let formData = new FormData(document.getElementById("modifyFaceForm"));
+            let response = await fetch('/modify/face', {
+                method: 'POST',
+                body: formData
+            });
+
+            let result = await response.json();
+            toggleLoading("modifyFaceForm", false);
+
+            if (response.ok) {
+                alert("Embedding aggiornato con successo!");
+                checkFaceStatus();
+            } else {
+                alert("Errore: " + result.detail);
+            }
+        }
+
+        async function deleteFaceEmbedding(event) {
+            event.preventDefault();
+            let button = document.getElementById("deleteFaceButton");
+            let spinner = document.getElementById("deleteSpinner");
+
+            button.style.display = "none";
+            spinner.style.display = "inline-block";
+
+            let response = await fetch('/delete/face', { method: 'DELETE' });
+            let result = await response.json();
+
+            button.style.display = "inline-block";
+            spinner.style.display = "none";
+
+            if (response.ok) {
+                alert(result.message);
+                checkFaceStatus();
+            } else {
+                alert(result.detail);
+            }
+        }
+
+        function toggleLoading(formId, isLoading) {
+            let form = document.getElementById(formId);
+            let button = form.querySelector("button");
+            let spinner = form.querySelector(".loadingSpinner");
+
+            if (isLoading) {
+                button.style.display = "none";
+                spinner.style.display = "inline-block";
+            } else {
+                button.style.display = "inline-block";
+                spinner.style.display = "none";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", checkFaceStatus);
+    </script>
 </head>
 <body>
     <h1>Welcome, {{ username }}!</h1>
 
-    <h2>Enroll Voice</h2>
-    <form action="/enroll/voice" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="username" value="{{ username }}">
-        <label for="file">Upload Voice File:</label>
-        <input type="file" name="file" required>
-        <br>
-        <button type="submit">Enroll Voice</button>
-    </form>
+    <!-- Sezione Enroll Face -->
+    <div id="enrollFaceSection">
+        <h2>Enroll Face</h2>
+        <form id="faceForm" onsubmit="submitEnrollForm(event)" enctype="multipart/form-data">
+            <label for="file">Upload Face Image:</label>
+            <input type="file" name="file" required>
+            <br>
+            <button type="submit">Enroll Face</button>
+            <span class="loadingSpinner" style="display: none;">⏳</span>
+        </form>
+    </div>
 
-    <h2>Enroll Face</h2>
-    <form action="/enroll/face" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="username" value="{{ username }}">
-        <label for="file">Upload Face Image:</label>
-        <input type="file" name="file" required>
-        <br>
-        <button type="submit">Enroll Face</button>
-    </form>
+    <!-- Sezione Modifica Embedding -->
+    <div id="modifyFaceSection" style="display: none;">
+        <h2>Modifica Embedding</h2>
+        <form id="modifyFaceForm" onsubmit="modifyEmbedding(event)" enctype="multipart/form-data">
+            <label for="file">Upload New Face Image:</label>
+            <input type="file" name="file" required>
+            <br>
+            <button type="submit">Modifica Embedding</button>
+            <span class="loadingSpinner" style="display: none;">⏳</span>
+        </form>
+    </div>
+
+    <!-- Bottone di eliminazione -->
+    <button id="deleteFaceButton" style="display: none;" onclick="deleteFaceEmbedding(event)">Elimina Embedding</button>
+    <span id="deleteSpinner" class="loadingSpinner" style="display: none;">⏳</span>
+
 </body>
 </html>

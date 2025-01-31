@@ -60,7 +60,7 @@ def login(username: str = Form(...), password: str = Form(...), response: Respon
         raise HTTPException(status_code=401, detail="Invalid username or password.")
 
     # Return a success message as JSON
-    return {"message": "Login effettuato con successo!\nBentornato " + username + "!"}
+    return {"message": "✅ Login effettuato con successo!\nBentornato " + username + "!"}
 
 # Logout Endpoint
 @app.post("/auth/logout")
@@ -89,10 +89,9 @@ def enroll_voice(username: str = Form(...), file: UploadFile = File(...)):
 
 # Face Enrollment Endpoint
 @app.post("/enroll/face")
-def enroll_face(request: Request, file: UploadFile = File(...)):
+async def enroll_face(request: Request, file: UploadFile = File(...)):
     username = request.cookies.get("username")
-    print(f"Username: {username}")
-
+    
     if not username:
         raise HTTPException(status_code=401, detail="User not logged in.")
     
@@ -102,7 +101,7 @@ def enroll_face(request: Request, file: UploadFile = File(...)):
     if file.content_type not in ["image/jpeg", "image/png"]:
         raise HTTPException(status_code=400, detail="Invalid file type.")
     
-    file_content = file.file.read()
+    file_content = await file.read()
     image_stream = BytesIO(file_content)
 
     # Estrai l'embedding
@@ -110,13 +109,68 @@ def enroll_face(request: Request, file: UploadFile = File(...)):
     if embedding is False:
         raise HTTPException(status_code=400, detail="Error extracting face embedding.")
     
-    # Save face embedding
-    embedding_collection.insert_one({
-        "username": username,
-        "type": "face",
-        "embedding": Binary(np.array(embedding).tobytes())  # Salva come binario
-    })
-    return {"message": "Face embedding enrolled."}
+    # Sovrascrive il vecchio embedding se esiste
+    embedding_collection.insert_one(
+        {"username": username, "type": "face", "embedding": Binary(np.array(embedding).tobytes())}
+    )
+
+    return {"message": f"Congratulazioni {username}! Il tuo volto è stato creato con successo."}
+
+@app.get("/check/face")
+def check_face_status(request: Request):
+    username = request.cookies.get("username")
+
+    if not username:
+        raise HTTPException(status_code=401, detail="User not logged in.")
+    
+    has_embedding = embedding_collection.find_one({"username": username}) is not None
+
+    return {"has_embedding": has_embedding}
+
+@app.post("/modify/face")
+async def enroll_face(request: Request, file: UploadFile = File(...)):
+    username = request.cookies.get("username")
+    
+    if not username:
+        raise HTTPException(status_code=401, detail="User not logged in.")
+    
+    if not user_collection.find_one({"username": username}):
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if file.content_type not in ["image/jpeg", "image/png"]:
+        raise HTTPException(status_code=400, detail="Invalid file type.")
+    
+    file_content = await file.read()
+    image_stream = BytesIO(file_content)
+
+    # Estrai l'embedding
+    embedding = extract_face_embedding(image_stream)
+    if embedding is False:
+        raise HTTPException(status_code=400, detail="Error extracting face embedding.")
+    
+    # Sovrascrive il vecchio embedding se esiste
+    embedding_collection.update_one(
+        {"username": username, "type": "face"},
+        {"$set": {"embedding": Binary(np.array(embedding).tobytes())}}, 
+        upsert=True
+    )
+    
+    return {"message": f"Congratulazioni {username}! Il tuo volto è stato aggiornato con successo."}
+
+
+@app.delete("/delete/face")
+async def delete_face_embedding(request: Request):
+    username = request.cookies.get("username")
+    
+    if not username:
+        raise HTTPException(status_code=401, detail="User not logged in.")
+    
+    result = embedding_collection.delete_one({"username": username, "type": "face"})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Face embedding not found.")
+
+    return {"message": f"Il volto di {username} è stato eliminato con successo."}
 
 # first page
 @app.get("/", response_class=HTMLResponse)
@@ -147,6 +201,7 @@ def home(request: Request, username: str = Cookie(default=None)):
 @app.get("/enrollment", response_class=HTMLResponse)
 def home(request: Request, username: str = Cookie(default=None)):
     if username:
+
         return templates.TemplateResponse("enrollment.html", {"request": request, "username": username})
     return templates.TemplateResponse("login.html", {"request": request})
 
