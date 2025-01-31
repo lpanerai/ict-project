@@ -107,6 +107,8 @@ def enroll_face(request: Request, file: UploadFile = File(...)):
 
     # Estrai l'embedding
     embedding = extract_face_embedding(image_stream)
+    if embedding is False:
+        raise HTTPException(status_code=400, detail="Error extracting face embedding.")
     
     # Save face embedding
     embedding_collection.insert_one({

@@ -60,7 +60,7 @@ def speekerRecognition():
     return identify_speaker(output_emb_dir,input_emb_dir, DURATION_VR, SAMPLE_RATE, threshold=0.6)
 
 def faceRecognition():
-    return recognize_face_live(threshold=0.85)
+    return recognize_face_live(threshold=0.65)
 
 def voice_enrollment(username):
     path_txt = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\enroll.json"

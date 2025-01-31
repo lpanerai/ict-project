@@ -18,6 +18,7 @@ from keras_facenet import FaceNet
 #Face Recognition
 import cv2
 from scipy.spatial.distance import cosine
+from mtcnn import MTCNN
 
 #Audio e Speech Recognition + Face Recognition
 import numpy as np
@@ -309,8 +310,9 @@ def load_registered_faces_from_db(embedding_collection):
 
 def recognize_face_live(threshold):
     """Riconoscimento facciale live utilizzando FaceNet e similarità coseno."""
-    # Inizializza il modello FaceNet
+    # Inizializza il modello FaceNet e il rilevatore di volti MTCNN
     embedder = FaceNet()
+    detector = MTCNN()
 
     # Carica gli embedding registrati
     registered_faces = load_registered_faces_from_db(embedding_collection)
@@ -329,38 +331,53 @@ def recognize_face_live(threshold):
             print("Errore nell'acquisizione del video.")
             break
 
-        # Converti il frame in RGB per FaceNet
+        # Converti il frame in RGB per FaceNet e MTCNN
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Mostra il video live
-        cv2.imshow("Riconoscimento Facciale", frame)
 
-        # Ottieni gli embedding per il frame attuale
-        face_embeddings = embedder.embeddings([rgb_frame])
+        # Rileva i volti nel frame
+        faces = detector.detect_faces(rgb_frame)
+        if len(faces) > 0:
+            for face in faces:
+                x, y, w, h = face['box']
+                face_crop = rgb_frame[y:y+h, x:x+w]  # Ritaglia il volto
 
-        for face_embedding in face_embeddings:
-            # Confronta l'embedding con quelli registrati usando la similarità coseno
-            for username, registered_encoding in registered_faces.items():
-                similarity = 1 - cosine(registered_encoding, face_embedding)
-                print(f"Similarità con {username}: {similarity}")
-                if similarity > threshold:
-                    # Disegna un rettangolo attorno al volto riconosciuto
-                    left, top, right, bottom = 50, 50, 150, 150  # Aggiusta le coordinate
-                    cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-                    cv2.putText(frame, f"{username}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-                    print(f"Utente riconosciuto: {username}")
-                    is_user_recognized = True
+                # Verifica che il ritaglio sia valido
+                if face_crop.size == 0:
+                    continue
 
-        # Esci con il tasto 'q'
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-        
-        if is_user_recognized:
-            # Rilascia la webcam e chiudi le finestre
-            cap.release()
-            return True
-    # Rilascia la webcam e chiudi le finestre
-    cap.release()
-    cv2.destroyAllWindows()
+                # Ridimensiona l'immagine per FaceNet (160x160)
+                face_crop = cv2.resize(face_crop, (160, 160))
+
+                # Ottieni gli embedding del volto ritagliato
+                face_embeddings = embedder.embeddings([face_crop])
+
+                if len(face_embeddings) > 0:
+                    face_embedding = face_embeddings[0]
+
+                    # Confronta l'embedding con quelli registrati usando la similarità coseno
+                    for username, registered_encoding in registered_faces.items():
+                        similarity = 1 - cosine(registered_encoding, face_embedding)
+                        print(f"Similarità con {username}: {similarity}")
+
+                        if similarity > threshold:
+                            # Disegna un rettangolo attorno al volto riconosciuto
+                            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                            cv2.putText(frame, f"{username}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                            print(f"Utente riconosciuto: {username}")
+                            is_user_recognized = True
+
+            # Mostra il video live con i riquadri disegnati
+            cv2.imshow("Riconoscimento Facciale", frame)
+
+            # Esci con il tasto 'q'
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            
+            if is_user_recognized:
+                cap.release()
+                cv2.destroyAllWindows()
+                return True
+        else: 
+            print("Nessun volto rilevato.")
 
     
