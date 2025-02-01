@@ -75,11 +75,13 @@ def logout(response: Response):
 async def enroll_voice(
     request: Request,
     audio: UploadFile = File(...),  # Usa il nome del campo correttamente
+    sample: int = Form(...)
 ):
     try:
         # Estrai username dalla richiesta
         username = request.cookies.get("username")
-        
+        print(f"Ricevuta registrazione numero: {sample}, dell'utente: {username}")
+        print(f"Ricevuta registrazione numero: {sample}, dell'utente: {username}")
         if not username:
             raise HTTPException(status_code=404, detail="Username non trovato nei cookies.")
         
@@ -115,7 +117,7 @@ async def enroll_voice(
         # Salva l'embedding nel database
         embedding_collection.insert_one({
             "username": username, 
-            "type": "voice", 
+            "type": f"voice{sample}", 
             "embedding": Binary(np.array(embedding).tobytes())  # Memorizza come binario
         })
 
@@ -123,7 +125,77 @@ async def enroll_voice(
     
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-       
+@app.post("/modify/voice")
+async def modify_voice(
+    request: Request,
+    audio: UploadFile = File(...),  # Usa il nome del campo correttamente
+    sample: int = Form(...)
+):
+    try:
+        # Estrai username dalla richiesta
+        username = request.cookies.get("username")
+        print(f"Ricevuta registrazione numero: {sample}, dell'utente: {username}")
+
+        if not username:
+            raise HTTPException(status_code=404, detail="Username non trovato nei cookies.")
+        
+        # Verifica se l'utente esiste nel database
+        if not user_collection.find_one({"username": username}):
+            raise HTTPException(status_code=404, detail="User not found.")
+        
+        # Verifica il tipo del file audio
+        if audio.content_type not in ["audio/webm"]:
+            raise HTTPException(status_code=400, detail="Invalid file type. Only WAV files are allowed.")
+
+        # Leggi il contenuto del file audio
+        # Read the uploaded file into a BytesIO buffer
+        audio_bytes = await audio.read()
+        audio_stream = io.BytesIO(audio_bytes)
+
+        # Load the WebM audio using pydub
+        audio_segment = AudioSegment.from_file(audio_stream, format="webm")
+
+        # Convert to WAV
+        wav_buffer = io.BytesIO()
+        audio_segment.export(wav_buffer, format="wav")
+        wav_buffer.seek(0)  # Reset buffer position
+
+        # Save to disk (Optional, for debugging)
+        with open(f"{BASE_DIR}/converted_audio.wav", "wb") as f:
+            f.write(wav_buffer.getbuffer())
+
+        # Esegui l'estrazione dell'embedding (sostituire con la tua funzione di estrazione)
+        embedding = extract_voice_embedding(f"{BASE_DIR}/converted_audio.wav")  # Funzione da implementare
+        print(f"Embedding: {embedding}")
+
+        # Sovrascrive il vecchio embedding se esiste
+        type=f"voice{sample}"
+        embedding_collection.update_one(
+            {"username": username, "type": type},
+            {"$set": {"embedding": Binary(np.array(embedding).tobytes())}}, 
+            upsert=True
+        )
+
+        return {"message": f"Voice recording successfully saved for {username}!"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/delete/voice")
+async def delete_face_embedding(request: Request, sample: int = Form(...)):
+    username = request.cookies.get("username")
+    
+    if not username:
+        raise HTTPException(status_code=401, detail="User not logged in.")
+    
+    result = embedding_collection.delete_one({"username": username, "type": f"voice{sample}"})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Face embedding not found.")
+
+    return {"message": f"Il volto di {username} è stato eliminato con successo."}
+
+
 # Face Enrollment Endpoint
 @app.post("/enroll/face")
 async def enroll_face(request: Request, file: UploadFile = File(...)):
@@ -160,12 +232,30 @@ def check_face_status(request: Request):
     if not username:
         raise HTTPException(status_code=401, detail="User not logged in.")
     
-    has_embedding = embedding_collection.find_one({"username": username}) is not None
+    has_embedding = embedding_collection.find_one({"username": username, "type": "face"}) is not None
 
     return {"has_embedding": has_embedding}
 
+@app.get("/check/voice")
+def check_face_status(request: Request):
+    username = request.cookies.get("username")
+
+    if not username:
+        raise HTTPException(status_code=401, detail="User not logged in.")
+    
+    has_voice_embedding_1 = embedding_collection.find_one({"username": username, "type": "voice1"}) is not None
+    has_voice_embedding_2 = embedding_collection.find_one({"username": username, "type": "voice2"}) is not None
+    has_voice_embedding_3 = embedding_collection.find_one({"username": username, "type": "voice3"}) is not None
+
+    return {
+        "has_voice_embedding_1": has_voice_embedding_1,
+        "has_voice_embedding_2": has_voice_embedding_2,
+        "has_voice_embedding_3": has_voice_embedding_3
+    }
+
+
 @app.post("/modify/face")
-async def enroll_face(request: Request, file: UploadFile = File(...)):
+async def modify_face(request: Request, file: UploadFile = File(...)):
     username = request.cookies.get("username")
     
     if not username:
@@ -245,14 +335,14 @@ def home(request: Request, username: str = Cookie(default=None)):
     return templates.TemplateResponse("login.html", {"request": request})
 
 #Face Enrollment Page
-@app.get("/enroll_face", response_class=HTMLResponse)
+@app.get("/enroll/face", response_class=HTMLResponse)
 def home(request: Request, username: str = Cookie(default=None)):
     if username:
         return templates.TemplateResponse("face_enrollment.html", {"request": request, "username": username})
     return templates.TemplateResponse("login.html", {"request": request})
 
 #Voice Enrollment Page
-@app.get("/enroll_voice", response_class=HTMLResponse)
+@app.get("/enroll/voice", response_class=HTMLResponse)
 def home(request: Request, username: str = Cookie(default=None)):
     if username:
         return templates.TemplateResponse("voice_enrollment.html", {"request": request, "username": username})

@@ -72,10 +72,12 @@
         }
     </style>
     <script>
+
+        // Funzione per verificare lo stato dell'embedding facciale
         async function checkFaceStatus() {
             let response = await fetch('/check/face');
             let result = await response.json();
-
+            console.log(result.has_embedding);
             if (result.has_embedding) {
                 document.getElementById("enrollFaceSection").style.display = "none";
                 document.getElementById("modifyFaceSection").style.display = "block";
@@ -84,6 +86,88 @@
                 document.getElementById("enrollFaceSection").style.display = "block";
                 document.getElementById("modifyFaceSection").style.display = "none";
                 document.getElementById("deleteFaceButton").style.display = "none";
+            }
+        }
+
+        // Funzione per inviare il modulo di iscrizione facciale
+        async function submitEnrollForm(event) {
+            event.preventDefault();
+            toggleLoading("faceForm", true);
+
+            let formData = new FormData(document.getElementById("faceForm"));
+            let response = await fetch('/enroll/face', {
+                method: 'POST',
+                body: formData
+            });
+
+            let result = await response.json();
+            toggleLoading("faceForm", false);
+
+            if (response.ok) {
+                alert(result.message);
+                checkFaceStatus();
+            } else {
+                alert("Errore: " + result.detail);
+            }
+        }
+
+        // Funzione per modificare l'embedding facciale
+        async function modifyEmbedding(event) {
+            event.preventDefault();
+            toggleLoading("modifyFaceForm", true);
+
+            let formData = new FormData(document.getElementById("modifyFaceForm"));
+            let response = await fetch('/modify/face', {
+                method: 'POST',
+                body: formData
+            });
+
+            let result = await response.json();
+            toggleLoading("modifyFaceForm", false);
+
+            if (response.ok) {
+                alert("Embedding aggiornato con successo!");
+                checkFaceStatus();
+            } else {
+                alert("Errore: " + result.detail);
+            }
+        }
+
+        // Funzione per eliminare l'embedding facciale
+        async function deleteFaceEmbedding(event) {
+            event.preventDefault();
+            let button = document.getElementById("deleteFaceButton");
+            let spinner = document.getElementById("deleteSpinner");
+
+            button.style.display = "none";
+            spinner.style.display = "inline-block";
+
+            let response = await fetch('/delete/face', { method: 'DELETE' });
+            let result = await response.json();
+
+            button.style.display = "inline-block";
+            spinner.style.display = "none";
+
+            if (response.ok) {
+                alert(result.message);
+                checkFaceStatus();
+            } else {
+                alert(result.detail);
+            }
+        }
+
+        // Funzione per gestire il caricamento
+        function toggleLoading(formId, isLoading) {
+            let form = document.getElementById(formId);
+            let button = form.querySelector("button");
+            let spinner = form.querySelector(".loadingSpinner");
+
+            if (isLoading) {
+                button.style.display = "none";
+                spinner.style.display = "inline-block";
+            } else {
+                button.style.display = "inline-block";
+                spinner.style.display = "none";
             }
         }
 

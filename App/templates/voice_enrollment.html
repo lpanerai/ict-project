@@ -4,6 +4,243 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice Enrollment</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+        initRecorder(1);
+        initRecorder(2);
+        initRecorder(3);
+        checkVoiceStatus();
+    });
+
+        document.querySelectorAll("[id^=delete-]").forEach(button => {
+            button.addEventListener("click", deleteVoiceEmbedding);
+        });
+
+        async function checkVoiceStatus() {
+            let response = await fetch('/check/voice');
+            let result = await response.json();
+            console.log(result);
+            if (result.has_voice_embedding_1) {
+                document.getElementById("enrollVoiceSection-1").style.display = "none";
+                document.getElementById("modifyVoiceSection-1").style.display = "block";
+                document.getElementById("deleteVoiceSection-1").style.display = "block";
+            } else {
+                document.getElementById("enrollVoiceSection-1").style.display = "block";
+                document.getElementById("modifyVoiceSection-1").style.display = "none";
+                document.getElementById("deleteVoiceSection-1").style.display = "none";
+            }
+            if (result.has_voice_embedding_2) {
+                document.getElementById("enrollVoiceSection-2").style.display = "none";
+                document.getElementById("modifyVoiceSection-2").style.display = "block";
+                document.getElementById("deleteVoiceSection-2").style.display = "block";
+            } else {
+                document.getElementById("enrollVoiceSection-2").style.display = "block";
+                document.getElementById("modifyVoiceSection-2").style.display = "none";
+                document.getElementById("deleteVoiceSection-2").style.display = "none";
+            }
+            if (result.has_voice_embedding_3) {
+                document.getElementById("enrollVoiceSection-3").style.display = "none";
+                document.getElementById("modifyVoiceSection-3").style.display = "block";
+                document.getElementById("deleteVoiceSection-3").style.display = "block";
+            } else {
+                document.getElementById("enrollVoiceSection-3").style.display = "block";
+                document.getElementById("modifyVoiceSection-3").style.display = "none";
+                document.getElementById("deleteVoiceSection-3").style.display = "none";
+            }
+        }
+
+        // Funzione per modificare l'embedding facciale
+        async function modifyVoiceEmbedding(sampleNumber) {
+            event.preventDefault();
+            //toggleLoading("modifyVoiceForm", true);
+
+            let formData = new FormData(document.getElementById(`modifyVoiceSection-${sampleNumber}`));
+            formData.append("sample", sampleNumber);
+            let response = await fetch('/modify/voice', {
+                method: 'POST',
+                body: formData
+            });
+
+            let result = await response.json();
+            //toggleLoading("modifyFaceForm", false);
+
+            if (response.ok) {
+                alert("Embedding aggiornato con successo!");
+                checkVoiceStatus();
+            } else {
+                alert("Errore: " + result.detail);
+            }
+        }
+
+        // Funzione per eliminare l'embedding facciale
+        async function deleteVoiceEmbedding(sampleNumber) {
+            event.preventDefault();
+            let button = document.getElementById(`delete-${sampleNumber}`);
+            //let spinner = document.getElementById("deleteSpinner");
+
+            button.style.display = "none";
+            //spinner.style.display = "inline-block";
+            let formData = new FormData();
+            
+            formData.append("sample", sampleNumber);
+            
+            let response = await fetch('/delete/voice', { method: 'DELETE', body: formData });
+
+            let result = await response.json();
+
+            button.style.display = "inline-block";
+            //spinner.style.display = "none";
+
+            if (response.ok) {
+                alert(result.message);
+                checkVoiceStatus();
+            } else {
+                alert(result.detail);
+            }
+        }
+
+        // Funzione per inizializzare la registrazione per un determinato sample
+        function initRecorder(sampleNumber) {
+            console.log(`Initializing recorder for sample ${sampleNumber}`);
+            console.log(`start-recording-${sampleNumber}`);
+            const startButton = document.getElementById(`start-recording-${sampleNumber}`);
+            console.log(startButton)
+            const stopButton = document.getElementById(`stop-recording-${sampleNumber}`);
+            const stopButtonModify = document.getElementById(`stop-recording-modify-${sampleNumber}`);
+            const audioPlayer = document.getElementById(`audio-player-${sampleNumber}`);
+            
+            const deleteButton = document.getElementById(`delete-${sampleNumber}`);
+            const modifyButton = document.getElementById(`modify-${sampleNumber}`);
+            const audioPlayerModify = document.getElementById(`audio-player-modify-${sampleNumber}`);    
+            
+            deleteButton.addEventListener("click", () => {
+                deleteVoiceEmbedding(sampleNumber);
+            });
+
+
+            let recorder;
+            let recorderModify;
+            let audioChunks = [];
+    
+            // Avvia la registrazione al click del bottone start
+            startButton.addEventListener("click", async () => {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                recorder = new MediaRecorder(stream);
+    
+                // Raccoglie i chunk audio registrati
+                recorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+    
+                // Quando la registrazione termina, crea un Blob e lo invia al server
+                recorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioPlayer.src = URL.createObjectURL(audioBlob);
+                    sendAudioToBackend(audioBlob,sampleNumber);
+                    
+                    // Reset dei chunk per eventuali registrazioni successive
+                    audioChunks = [];
+
+                    checkVoiceStatus();
+                    
+                };
+    
+                recorder.start();
+                startButton.disabled = true;
+                stopButton.disabled = false;
+            });
+            
+            modifyButton.addEventListener("click", async () => {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                recorderModify = new MediaRecorder(stream);
+    
+                // Raccoglie i chunk audio registrati
+                recorderModify.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+    
+                // Quando la registrazione termina, crea un Blob e lo invia al server
+                recorderModify.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioPlayerModify.src = URL.createObjectURL(audioBlob);
+                    sendAudioModifiedToBackend(audioBlob,sampleNumber);
+                    
+                    // Reset dei chunk per eventuali registrazioni successive
+                    audioChunks = [];
+
+                    checkVoiceStatus();
+                    
+                };
+    
+                recorderModify.start();
+                modifyButton.disabled = true;
+                stopButtonModify.disabled = false;
+            });
+
+            // Ferma la registrazione al click del bottone stop
+            stopButton.addEventListener("click", () => {
+                recorder.stop();
+                startButton.disabled = false;
+                stopButton.disabled = true;
+            });
+
+            stopButtonModify.addEventListener("click", () => {
+                recorderModify.stop();
+                modifyButton.disabled = false;
+                stopButtonModify.disabled = true;
+            });
+        }
+
+        async function sendAudioModifiedToBackend(blob, sampleNumber) {
+            const formData = new FormData();
+            // Cambiamo il nome del file per includere il sampleNumber (opzionale)
+            formData.append("audio", blob, `audio-${sampleNumber}.webm`);
+            // Aggiungiamo il numero della registrazione come campo form
+            formData.append("sample", sampleNumber);
+
+            try {
+                const response = await fetch("/modify/voice", {
+                    method: "POST",
+                 body: formData,
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    console.log(`WAV file uploaded successfully for sample ${sampleNumber}`);
+                } else {
+                    console.error("Conversion failed:", result);
+                }
+            } catch (error) {
+                console.error("Errore durante l'invio:", error);
+            }
+        }
+        // Funzione per inviare il Blob audio al backend
+        async function sendAudioToBackend(blob, sampleNumber) {
+            const formData = new FormData();
+            // Cambiamo il nome del file per includere il sampleNumber (opzionale)
+            formData.append("audio", blob, `audio-${sampleNumber}.webm`);
+            // Aggiungiamo il numero della registrazione come campo form
+            formData.append("sample", sampleNumber);
+
+            try {
+                const response = await fetch("/enroll/voice", {
+                    method: "POST",
+                 body: formData,
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    console.log(`WAV file uploaded successfully for sample ${sampleNumber}`);
+                } else {
+                    console.error("Conversion failed:", result);
+                }
+            } catch (error) {
+                console.error("Errore durante l'invio:", error);
+            }
+
+
+    }
+
+    </script>
+
     <style>
         body {
             background: linear-gradient(to bottom right, #d400a5, #007ba7);
@@ -43,21 +280,55 @@
 <body>
     <div class="container">
         <h1>Voice Enrollment</h1>
-        
-        <h2>Record Sample 1</h2>
+        <div id="enrollVoiceSection-1">
+            <h2>Record Sample 1</h2>
         <button id="start-recording-1">Start Recording</button>
         <button id="stop-recording-1" disabled>Stop Recording</button>
         <audio id="audio-player-1" controls></audio>
-        
-        <h2>Record Sample 2</h2>
+        </div>
+        <div id="modifyVoiceSection-1">
+            <h2>Modify Sample 1</h2>
+            <button id="modify-1" data-sample="1">Modify Embedded Voice</button>
+            <button id="stop-recording-modify-1" disabled>Stop Recording</button>
+            <audio id="audio-player-modify-1" controls></audio>
+        </div>
+        <div id="deleteVoiceSection-1">
+            <button id="delete-1" data-sample="1">Delete Embedded Voice</button>
+        </div>
+
+        <div id="enrollVoiceSection-2">
+            <h2>Record Sample 2</h2>
         <button id="start-recording-2">Start Recording</button>
         <button id="stop-recording-2" disabled>Stop Recording</button>
         <audio id="audio-player-2" controls></audio>
+        </div> 
+
+        <div id="modifyVoiceSection-2">
+            <h2>Modify Sample 2</h2>
+            <button id="modify-2" data-sample="2">Register new Audio</button>
+            <button id="stop-recording-modify-2" disabled>Stop Recording</button>
+            <audio id="audio-player-modify-2" controls></audio>
+        </div>
+        <div id="deleteVoiceSection-2">
+            <button id="delete-2" data-sample="2">Delete Embedded Voice</button>
+        </div>
+
         
-        <h2>Record Sample 3</h2>
+        <div id="enrollVoiceSection-3">
+            <h2>Record Sample 3</h2>
         <button id="start-recording-3">Start Recording</button>
         <button id="stop-recording-3" disabled>Stop Recording</button>
         <audio id="audio-player-3" controls></audio>
+        </div>
+        <div id="modifyVoiceSection-3">
+            <h2>Modify Sample 3</h2>
+            <button id="modify-3" data-sample="3">Modify Embedded Voice</button>
+            <button id="stop-recording-modify-3" disabled>Stop Recording</button>
+            <audio id="audio-player-modify-3" controls></audio>
+        </div>
+        <div id="deleteVoiceSection-3">
+            <button id="delete-3" data-sample="3">Delete Embedded Voice</button>
+        </div>
         
         <br>
         <button onclick="window.location.href='/enrollment'">Back to Enrollment</button>

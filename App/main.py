@@ -22,11 +22,10 @@ model, utils = torch.hub.load(
     model='silero_vad',
     source='github'
     )
+
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
 
-#model_save_path = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Models\\silero_vad_model.pth"
-#torch.save(model.state_dict(), model_save_path)
 
 silero_vad = model.to(device)
 
@@ -62,19 +61,6 @@ def speekerRecognition():
 def faceRecognition():
     return recognize_face_live(threshold=0.65)
 
-def voice_enrollment(username):
-    path_txt = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\enroll.json"
-    output_emb_dir = "C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\Embedding\\Voice\\"
-    output_voice_dir = f"C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\{username}\\Voice\\"
-    enroll_user_voice(path_txt,username,output_voice_dir, output_emb_dir ,DURATION_EN, SAMPLE_RATE, num_recording=1)
-    enroll_user_voice(path_txt,username ,output_voice_dir, output_emb_dir, DURATION_EN, SAMPLE_RATE, num_recording=2)
-    enroll_user_voice(path_txt,username,output_voice_dir, output_emb_dir, DURATION_EN, SAMPLE_RATE, num_recording=3)
-    
-
-def face_enrollment(username):
-    image_path=f"C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\{username}\\Photos\\{username}.jpg"
-    output_emb_dir="C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\Embedding\\Face\\"
-    return enroll_user_face(username, image_path, output_emb_dir)
 
 if __name__ == "__main__":
     #voice_enrollment(username="Leonardo")
