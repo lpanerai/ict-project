@@ -223,24 +223,40 @@ def home(request: Request, username: str = Cookie(default=None)):
         return templates.TemplateResponse("home.html", {"request": request, "username": username})
     return templates.TemplateResponse("home.html", {"request": request})
 
+#Register Page
 @app.get("/register", response_class=HTMLResponse)
 def home(request: Request, username: str = Cookie(default=None)):
     if username:
         return templates.TemplateResponse("home.html", {"request": request, "username": username})
     return templates.TemplateResponse("register.html", {"request": request})
 
+#Login Page
 @app.get("/login", response_class=HTMLResponse)
 def home(request: Request, username: str = Cookie(default=None)):
     if username:
         return templates.TemplateResponse("home.html", {"request": request, "username": username})
     return templates.TemplateResponse("login.html", {"request": request})
 
+#Enrollment Page
 @app.get("/enrollment", response_class=HTMLResponse)
 def home(request: Request, username: str = Cookie(default=None)):
     if username:
-
         return templates.TemplateResponse("enrollment.html", {"request": request, "username": username})
     return templates.TemplateResponse("login.html", {"request": request})
+
+#Face Enrollment Page
+@app.get("/enroll_face", response_class=HTMLResponse)
+def home(request: Request, username: str = Cookie(default=None)):
+    if username:
+        return templates.TemplateResponse("face_enrollment.html", {"request": request, "username": username})
+    return templates.TemplateResponse("login.html", {"request": request})
+
+#Voice Enrollment Page
+@app.get("/enroll_voice", response_class=HTMLResponse)
+def home(request: Request, username: str = Cookie(default=None)):
+    if username:
+        return templates.TemplateResponse("voice_enrollment.html", {"request": request, "username": username})
+    return templates.TemplateResponse("login.html", {"request": request})    
 
 if __name__ == "__main__":
     import uvicorn

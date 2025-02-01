@@ -4,6 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Login</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #ff007f, #ff80bf, #6495ED, #00A4CC);
+            color: white;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 2.5em;
+        }
+        form {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        label {
+            font-size: 1.2em;
+        }
+        input {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        button {
+            padding: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .register-button {
+            margin-top: 20px;
+        }
+    </style>
     <script>
         async function submitLoginForm(event) {
             event.preventDefault();
@@ -25,12 +75,11 @@
             const result = await response.json();
     
             if (response.ok) {
-                alert(result.message);  // Success message
+                alert(result.message);
                 document.cookie = `username=${username}; path=/`;
-                // Esegui il redirect dopo che l'utente ha chiuso l'alert
-                window.location.href = "/home";  // Redirect to home page
+                window.location.href = "/home";
             } else {
-                alert(result.detail);  // Error message from the server
+                alert(result.detail);
             }
         }
     </script>
@@ -50,6 +99,6 @@
             <button type="submit">Login</button>
         </form>
     </main>
-    <button onclick="window.location.href = '/register'">Go to Register</button>
+    <button class="register-button" onclick="window.location.href = '/register'">Go to Register</button>
 </body>
 </html>

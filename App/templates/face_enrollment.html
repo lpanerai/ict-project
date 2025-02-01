@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment Face</title>
+    <style>
+        body {
+            background: linear-gradient(to bottom right, #d400a5, #007ba7);
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            border-radius: 30px;
+            width: 50%;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            font-size: 2.5em;
+        }
+        h2 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+        form {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 500px; /* Imposto una larghezza massima per la sezione */
+            margin: 0 auto; /* Allineo il form al centro */
+        }
+        label {
+            font-size: 1.2em;
+        }
+        input {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        button {
+            background-color: #ff007f;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #ff3399;
+        }
+        .loadingSpinner {
+            font-size: 1.5em;
+        }
+        .section {
+            margin: 20px 0;
+        }
+    </style>
+    <script>
+        async function checkFaceStatus() {
+            let response = await fetch('/check/face');
+            let result = await response.json();
+
+            if (result.has_embedding) {
+                document.getElementById("enrollFaceSection").style.display = "none";
+                document.getElementById("modifyFaceSection").style.display = "block";
+                document.getElementById("deleteFaceButton").style.display = "block";
+            } else {
+                document.getElementById("enrollFaceSection").style.display = "block";
+                document.getElementById("modifyFaceSection").style.display = "none";
+                document.getElementById("deleteFaceButton").style.display = "none";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", checkFaceStatus);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Enroll Your Face</h1>
+        </header>
+
+        <!-- Sezione Enroll Face -->
+        <div class="section" id="enrollFaceSection">
+            <h2>Enroll Face</h2>
+            <form id="faceForm" onsubmit="submitEnrollForm(event)" enctype="multipart/form-data">
+                <label for="file">Upload Face Image:</label>
+                <input type="file" name="file" required>
+                <br>
+                <button type="submit">Enroll Face</button>
+                <span class="loadingSpinner" style="display: none;">⏳</span>
+            </form>
+        </div>
+
+        <!-- Sezione Modifica Embedding -->
+        <div class="section" id="modifyFaceSection" style="display: none;">
+            <h2>Modifica Embedding</h2>
+            <form id="modifyFaceForm" onsubmit="modifyEmbedding(event)" enctype="multipart/form-data">
+                <label for="file">Upload New Face Image:</label>
+                <input type="file" name="file" required>
+                <br>
+                <button type="submit">Modifica Embedding</button>
+                <span class="loadingSpinner" style="display: none;">⏳</span>
+            </form>
+        </div>
+
+        <!-- Bottone di eliminazione -->
+        <div class="section">
+            <button id="deleteFaceButton" style="display: none;" onclick="deleteFaceEmbedding(event)">Elimina Embedding</button>
+            <span id="deleteSpinner" class="loadingSpinner" style="display: none;">⏳</span>
+        </div>
+
+        <!-- Bottone Back to Enrollment -->
+        <div class="section">
+            <button onclick="window.location.href='/enrollment'">Back to Enrollment</button>
+        </div>
+    </div>
+</body>
+</html>

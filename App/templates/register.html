@@ -4,6 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Registration</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #ff007f, #ff80bf, #6495ED, #00A4CC);
+            color: white;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 2.5em;
+        }
+        form {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        label {
+            font-size: 1.2em;
+        }
+        input {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        button {
+            padding: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .login-button {
+            margin-top: 20px;
+        }
+    </style>
     <script>
         async function submitForm(event) {
             event.preventDefault();
@@ -23,11 +73,11 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    alert(result.message);  // Messaggio di successo
-                    document.cookie = `username=${username}; path=/`;  // Imposta il cookie
+                    alert(result.message);
+                    document.cookie = `username=${username}; path=/`;
                     window.location.href = "/home";
                 } else {
-                    alert(result.detail);  // Messaggio di errore
+                    alert(result.detail);
                 }
             } catch (error) {
                 console.error("Errore durante la registrazione:", error);
@@ -51,6 +101,6 @@
             <button type="submit">Register</button>
         </form>
     </main>
-    <button onclick="window.location.href = '/login'">Go back to Login</button>
+    <button class="login-button" onclick="window.location.href = '/login'">Go back to Login</button>
 </body>
 </html>

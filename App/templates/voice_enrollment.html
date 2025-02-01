@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Enrollment</title>
+    <style>
+        body {
+            background: linear-gradient(to bottom right, #d400a5, #007ba7);
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 30px;
+            width: 60%;
+            margin: auto;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        button {
+            background-color: #ff007f;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #ff3399;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Voice Enrollment</h1>
+        
+        <h2>Record Sample 1</h2>
+        <button id="start-recording-1">Start Recording</button>
+        <button id="stop-recording-1" disabled>Stop Recording</button>
+        <audio id="audio-player-1" controls></audio>
+        
+        <h2>Record Sample 2</h2>
+        <button id="start-recording-2">Start Recording</button>
+        <button id="stop-recording-2" disabled>Stop Recording</button>
+        <audio id="audio-player-2" controls></audio>
+        
+        <h2>Record Sample 3</h2>
+        <button id="start-recording-3">Start Recording</button>
+        <button id="stop-recording-3" disabled>Stop Recording</button>
+        <audio id="audio-player-3" controls></audio>
+        
+        <br>
+        <button onclick="window.location.href='/enrollment'">Back to Enrollment</button>
+    </div>
+</body>
+</html>

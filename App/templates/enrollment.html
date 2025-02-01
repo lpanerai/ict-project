@@ -4,214 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enrollment</title>
-    <script>
-
-        // Funzione per verificare lo stato dell'embedding facciale
-        async function checkFaceStatus() {
-            let response = await fetch('/check/face');
-            let result = await response.json();
-
-            if (result.has_embedding) {
-                document.getElementById("enrollFaceSection").style.display = "none";
-                document.getElementById("modifyFaceSection").style.display = "block";
-                document.getElementById("deleteFaceButton").style.display = "block";
-            } else {
-                document.getElementById("enrollFaceSection").style.display = "block";
-                document.getElementById("modifyFaceSection").style.display = "none";
-                document.getElementById("deleteFaceButton").style.display = "none";
-            }
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #ff007f, #ff80bf, #6495ED, #00A4CC);
+            color: white;
+            text-align: center;
         }
-
-        // Funzione per inviare il modulo di iscrizione facciale
-        async function submitEnrollForm(event) {
-            event.preventDefault();
-            toggleLoading("faceForm", true);
-
-            let formData = new FormData(document.getElementById("faceForm"));
-            let response = await fetch('/enroll/face', {
-                method: 'POST',
-                body: formData
-            });
-
-            let result = await response.json();
-            toggleLoading("faceForm", false);
-
-            if (response.ok) {
-                alert(result.message);
-                checkFaceStatus();
-            } else {
-                alert("Errore: " + result.detail);
-            }
+        header h1 {
+            font-size: 2.5em;
         }
-
-        // Funzione per modificare l'embedding facciale
-        async function modifyEmbedding(event) {
-            event.preventDefault();
-            toggleLoading("modifyFaceForm", true);
-
-            let formData = new FormData(document.getElementById("modifyFaceForm"));
-            let response = await fetch('/modify/face', {
-                method: 'POST',
-                body: formData
-            });
-
-            let result = await response.json();
-            toggleLoading("modifyFaceForm", false);
-
-            if (response.ok) {
-                alert("Embedding aggiornato con successo!");
-                checkFaceStatus();
-            } else {
-                alert("Errore: " + result.detail);
-            }
+        .section {
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
         }
-
-        // Funzione per eliminare l'embedding facciale
-        async function deleteFaceEmbedding(event) {
-            event.preventDefault();
-            let button = document.getElementById("deleteFaceButton");
-            let spinner = document.getElementById("deleteSpinner");
-
-            button.style.display = "none";
-            spinner.style.display = "inline-block";
-
-            let response = await fetch('/delete/face', { method: 'DELETE' });
-            let result = await response.json();
-
-            button.style.display = "inline-block";
-            spinner.style.display = "none";
-
-            if (response.ok) {
-                alert(result.message);
-                checkFaceStatus();
-            } else {
-                alert(result.detail);
-            }
+        .section h2 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
         }
-
-        // Funzione per gestire il caricamento
-        function toggleLoading(formId, isLoading) {
-            let form = document.getElementById(formId);
-            let button = form.querySelector("button");
-            let spinner = form.querySelector(".loadingSpinner");
-
-            if (isLoading) {
-                button.style.display = "none";
-                spinner.style.display = "inline-block";
-            } else {
-                button.style.display = "inline-block";
-                spinner.style.display = "none";
-            }
+        button {
+            padding: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
         }
-
-        // Inizializza lo stato dell'utente
-        document.addEventListener("DOMContentLoaded", checkFaceStatus);
-    </script>
+        button:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome, {{ username }}!</h1>
+    <header>
+        <h1>Welcome, {{ username }}!</h1>
+    </header>
 
-    <h1>Record and Upload Audio</h1>
-
-    <!-- Buttons for starting and stopping recording -->
-    <button id="start-recording">Start Recording</button>
-    <button id="stop-recording" disabled>Stop Recording</button>
-
-    <!-- Audio player to play the recorded audio -->
-    <audio id="audio-player" controls></audio>
-
-    <script>
-        let recorder;
-        let audioChunks = [];
-        let audioBlob;
-
-        const startButton = document.getElementById("start-recording");
-        const stopButton = document.getElementById("stop-recording");
-        const audioPlayer = document.getElementById("audio-player");
-
-        // Start recording audio when the button is clicked
-        startButton.addEventListener("click", async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            recorder = new MediaRecorder(stream);
-            
-            // Collect the recorded audio chunks
-            recorder.ondataavailable = (event) => {
-                audioChunks.push(event.data);
-            };
-
-            // When recording stops, create a Blob and send it to the server
-            recorder.onstop = () => {
-                audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                audioPlayer.src = URL.createObjectURL(audioBlob);
-                sendAudioToBackend(audioBlob);
-            };
-
-            recorder.start();
-            startButton.disabled = true;
-            stopButton.disabled = false;
-        });
-
-        // Stop recording when the button is clicked
-        stopButton.addEventListener("click", () => {
-            recorder.stop();
-            startButton.disabled = false;
-            stopButton.disabled = true;
-        });
-
-        // Function to send the audio Blob to the backend as FormData
-        async function sendAudioToBackend(blob) {
-            const formData = new FormData();
-            formData.append("audio", blob, "audio.webm");
-
-            const response = await fetch("http://localhost:5000/enroll/voice", {
-                method: "POST",
-                body: formData,
-            });
-            let result = await response.json();
-            if (response.ok) {
-                const audioBlob = await response.blob(); // Get WAV file
-                const audioUrl = URL.createObjectURL(audioBlob);
-
-                // Create an <audio> element to play the WAV file
-                const audioPlayer = document.createElement("audio");
-                audioPlayer.src = audioUrl;
-                audioPlayer.controls = true;
-                document.body.appendChild(audioPlayer);
-
-                console.log("WAV file received successfully");
-            } else {
-                console.error("Conversion failed:", await response.text());
-            }
-        }
-    </script>
+    <!-- Sezione Enroll Voice -->
+    <div class="section">
+        <h2>Enroll Voice</h2>
+        <button onclick="window.location.href='/enroll/voice'">Go to Voice Enrollment</button>
+    </div>
 
     <!-- Sezione Enroll Face -->
-    <div id="enrollFaceSection">
+    <div class="section">
         <h2>Enroll Face</h2>
-        <form id="faceForm" onsubmit="submitEnrollForm(event)" enctype="multipart/form-data">
-            <label for="file">Upload Face Image:</label>
-            <input type="file" name="file" required>
-            <br>
-            <button type="submit">Enroll Face</button>
-            <span class="loadingSpinner" style="display: none;">⏳</span>
-        </form>
+        <button onclick="window.location.href='/enroll/face'">Go to Face Enrollment</button>
     </div>
-
-    <!-- Sezione Modifica Embedding -->
-    <div id="modifyFaceSection" style="display: none;">
-        <h2>Modifica Embedding</h2>
-        <form id="modifyFaceForm" onsubmit="modifyEmbedding(event)" enctype="multipart/form-data">
-            <label for="file">Upload New Face Image:</label>
-            <input type="file" name="file" required>
-            <br>
-            <button type="submit">Modifica Embedding</button>
-            <span class="loadingSpinner" style="display: none;">⏳</span>
-        </form>
-    </div>
-
-    <!-- Bottone di eliminazione -->
-    <button id="deleteFaceButton" style="display: none;" onclick="deleteFaceEmbedding(event)">Elimina Embedding</button>
-    <span id="deleteSpinner" class="loadingSpinner" style="display: none;">⏳</span>
-
 </body>
 </html>
