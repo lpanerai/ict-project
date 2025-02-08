@@ -49,7 +49,7 @@
             }
         }
 
-        // Funzione per modificare l'embedding facciale
+        //Funzione per modificare l'embedding vocale
         async function modifyVoiceEmbedding(sampleNumber) {
             event.preventDefault();
             //toggleLoading("modifyVoiceForm", true);
@@ -72,7 +72,7 @@
             }
         }
 
-        // Funzione per eliminare l'embedding facciale
+        //Funzione per eliminare l'embedding vocale
         async function deleteVoiceEmbedding(sampleNumber) {
             event.preventDefault();
             let button = document.getElementById(`delete-${sampleNumber}`);
@@ -286,12 +286,65 @@
         <button id="stop-recording-1" disabled>Stop Recording</button>
         <audio id="audio-player-1" controls></audio>
         </div>
+
+        <br> 
+        <details>
+            <summary>Txt for Sample 1</summary>
+            <p style="text-align: justify; margin-left: 10px;">
+                Read the following text to register the first sample for <em>Voice Enrollment<em>:
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Hello, my name is <strong>[Your Name]</strong>. I am recording this voice sample to help the system recognize my voice.  
+                I will say a variety of words and sentences, using different sounds and patterns.
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                <em>The quick brown fox jumps over the lazy dog.</em><br>
+                <em>She sells seashells by the seashore.</em><br>
+                <em>Peter Piper picked a peck of pickled peppers.</em>  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                It's a beautiful day, and I am happy to be speaking.  
+                I enjoy <strong>listening to music</strong>, <strong>reading books</strong>, and <strong>traveling</strong>.  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Can you hear me clearly? I hope the system will understand me well.  
+                Thank you for processing my voice. <strong>Goodbye!</strong>  
+            </p>
+        </details>        
+        
         <div id="modifyVoiceSection-1">
             <h2>Modify Sample 1</h2>
             <button id="modify-1" data-sample="1">Modify Embedded Voice</button>
             <button id="stop-recording-modify-1" disabled>Stop Recording</button>
             <audio id="audio-player-modify-1" controls></audio>
         </div>
+
+        <br> 
+        <details>
+            <summary>Txt for Sample 1</summary>
+            <p style="text-align: justify; margin-left: 10px;">
+                Read the following text to register the first sample for <em>Voice Enrollment<em>:
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Hello, my name is <strong>[Your Name]</strong>. I am recording this voice sample to help the system recognize my voice.  
+                I will say a variety of words and sentences, using different sounds and patterns.
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                <em>The quick brown fox jumps over the lazy dog.</em><br>
+                <em>She sells seashells by the seashore.</em><br>
+                <em>Peter Piper picked a peck of pickled peppers.</em>  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                It's a beautiful day, and I am happy to be speaking.  
+                I enjoy <strong>listening to music</strong>, <strong>reading books</strong>, and <strong>traveling</strong>.  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Can you hear me clearly? I hope the system will understand me well.  
+                Thank you for processing my voice. <strong>Goodbye!</strong>  
+            </p>
+        </details>
+
+        <br>
         <div id="deleteVoiceSection-1">
             <button id="delete-1" data-sample="1">Delete Embedded Voice</button>
         </div>
@@ -303,16 +356,73 @@
         <audio id="audio-player-2" controls></audio>
         </div> 
 
+        <br> 
+        <details>
+            <summary>Txt for Sample 2</summary>
+            <p style="text-align: justify; margin-left: 10px;">
+                Read the following text to register the second sample for <em>Voice Enrollment<em>:
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Good afternoon, my name is <strong>[Your Name]</strong>. I’m here to record a voice sample for the system to analyze.  
+                Let’s start with a few basic phrases.
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                <em>The sun is shining brightly today.</em><br>
+                <em>How quickly can you jump over the high fence?</em><br>
+                <em>The rain in Spain stays mainly in the plains.</em>  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                I think I’ll go for a walk in the park later.  
+                My favorite color is <strong>blue</strong>, and I love eating <strong>fresh fruit</strong>.  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Do you prefer <strong>tea</strong> or <strong>coffee</strong> in the morning?  
+                This is a simple test, but I hope it helps improve the accuracy of voice recognition.  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Thank you for your attention.
+            </p>
+        </details>        
+
         <div id="modifyVoiceSection-2">
             <h2>Modify Sample 2</h2>
             <button id="modify-2" data-sample="2">Register new Audio</button>
             <button id="stop-recording-modify-2" disabled>Stop Recording</button>
             <audio id="audio-player-modify-2" controls></audio>
         </div>
+
+        <br>         
+        <details>
+            <summary>Txt for Sample 2</summary>
+            <p style="text-align: justify; margin-left: 10px;">
+                Read the following text to register the second sample for <em>Voice Enrollment<em>:
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Good afternoon, my name is <strong>[Your Name]</strong>. I’m here to record a voice sample for the system to analyze.  
+                Let’s start with a few basic phrases.
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                <em>The sun is shining brightly today.</em><br>
+                <em>How quickly can you jump over the high fence?</em><br>
+                <em>The rain in Spain stays mainly in the plains.</em>  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                I think I’ll go for a walk in the park later.  
+                My favorite color is <strong>blue</strong>, and I love eating <strong>fresh fruit</strong>.  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Do you prefer <strong>tea</strong> or <strong>coffee</strong> in the morning?  
+                This is a simple test, but I hope it helps improve the accuracy of voice recognition.  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Thank you for your attention.
+            </p>
+        </details>
+
+        <br>        
         <div id="deleteVoiceSection-2">
             <button id="delete-2" data-sample="2">Delete Embedded Voice</button>
         </div>
-
         
         <div id="enrollVoiceSection-3">
             <h2>Record Sample 3</h2>
@@ -320,16 +430,77 @@
         <button id="stop-recording-3" disabled>Stop Recording</button>
         <audio id="audio-player-3" controls></audio>
         </div>
+
+        <br>         
+        <details>
+            <summary>Txt for Sample 3</summary>
+            <p style="text-align: justify; margin-left: 10px;">
+                Read the following text to register the third sample for <em>Voice Enrollment<em>:
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Hi there! My name is <strong>[Your Name]</strong>, and I am recording this voice sample to help improve speech recognition.  
+                I’m going to say a few sentences with different sounds and words.
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                <em>The cat sat on the mat and looked out the window.</em><br>
+                <em>We went to the market and bought some fresh vegetables.</em><br>
+                <em>It's always fun to try new things and explore the unknown.</em>
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Did you know that the tallest mountain in the world is <strong>Mount Everest</strong>?  
+                Some birds fly long distances during migration.  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                I enjoy <strong>reading</strong>, <strong>hiking</strong>, and <strong>spending time with friends</strong>.  
+                What is your favorite hobby?
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Thank you for helping to improve the system.  
+                I look forward to hearing the results!
+            </p>
+        </details>
+        
         <div id="modifyVoiceSection-3">
             <h2>Modify Sample 3</h2>
             <button id="modify-3" data-sample="3">Modify Embedded Voice</button>
             <button id="stop-recording-modify-3" disabled>Stop Recording</button>
             <audio id="audio-player-modify-3" controls></audio>
         </div>
+
+        <br>        
+        <details>
+            <summary>Txt for Sample 3</summary>
+            <p style="text-align: justify; margin-left: 10px;">
+                Read the following text to register the third sample for <em>Voice Enrollment<em>:
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Hi there! My name is <strong>[Your Name]</strong>, and I am recording this voice sample to help improve speech recognition.  
+                I’m going to say a few sentences with different sounds and words.
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                <em>The cat sat on the mat and looked out the window.</em><br>
+                <em>We went to the market and bought some fresh vegetables.</em><br>
+                <em>It's always fun to try new things and explore the unknown.</em>
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Did you know that the tallest mountain in the world is <strong>Mount Everest</strong>?  
+                Some birds fly long distances during migration.  
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                I enjoy <strong>reading</strong>, <strong>hiking</strong>, and <strong>spending time with friends</strong>.  
+                What is your favorite hobby?
+            </p>
+            <p style="text-align: justify; margin-left: 10px;">
+                Thank you for helping to improve the system.  
+                I look forward to hearing the results!
+            </p>
+        </details>
+        
+        <br>        
         <div id="deleteVoiceSection-3">
             <button id="delete-3" data-sample="3">Delete Embedded Voice</button>
         </div>
-        
+
         <br>
         <button onclick="window.location.href='/enrollment'">Back to Enrollment</button>
     </div>

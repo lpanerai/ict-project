@@ -178,11 +178,21 @@
     <div class="container">
         <header>
             <h1>Enroll Your Face</h1>
-        </header>
+        </header> 
 
         <!-- Sezione Enroll Face -->
         <div class="section" id="enrollFaceSection">
             <h2>Enroll Face</h2>
+
+            <details>
+                <summary>Info</summary>
+                <p style="text-align: justify; margin-left: 10px;">
+                    In this section, it is possible to upload a face image and enroll the face features.<br>
+                    Upload on the following:
+                </p>
+            </details>
+            <br>
+
             <form id="faceForm" onsubmit="submitEnrollForm(event)" enctype="multipart/form-data">
                 <label for="file">Upload Face Image:</label>
                 <input type="file" name="file" required>
