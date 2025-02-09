@@ -81,7 +81,6 @@ async def enroll_voice(
         # Estrai username dalla richiesta
         username = request.cookies.get("username")
         print(f"Ricevuta registrazione numero: {sample}, dell'utente: {username}")
-        print(f"Ricevuta registrazione numero: {sample}, dell'utente: {username}")
         if not username:
             raise HTTPException(status_code=404, detail="Username non trovato nei cookies.")
         
@@ -125,6 +124,7 @@ async def enroll_voice(
     
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
 @app.post("/modify/voice")
 async def modify_voice(
     request: Request,
