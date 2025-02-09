@@ -16,6 +16,13 @@ import scipy
 import wave
 import ffmpeg
 
+# Carica il modello di riconoscimento speaker
+classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+# Inizializza il modello FaceNet
+embedder = FaceNet()
+# Inizializza il rilevatore di volti MTCNN
+detector = MTCNN()
+
 def extract_voice_embedding(audio_bytes):
     """
     Extract voice embedding from audio bytes using SpeechBrain's ECAPA-TDNN model.
@@ -31,10 +38,6 @@ def extract_voice_embedding(audio_bytes):
     """
     
     try:
-        
-        # Carica il modello di riconoscimento speaker
-        classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
-
         
         # Convert bytes directly to tensor using torchaudio
         waveform, sample_rate = torchaudio.load(audio_bytes)
@@ -58,10 +61,7 @@ def extract_voice_embedding(audio_bytes):
 
 def extract_face_embedding(image_file):
     try:
-        # Inizializza il modello FaceNet
-        embedder = FaceNet()
-        # Inizializza il rilevatore di volti MTCNN
-        detector = MTCNN()
+        
 
         # Carica l'immagine con Pillow
         img = Image.open(image_file).convert("RGB")
