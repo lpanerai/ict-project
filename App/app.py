@@ -193,7 +193,7 @@ async def delete_face_embedding(request: Request, sample: int = Form(...)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Face embedding not found.")
 
-    return {"message": f"Il volto di {username} è stato eliminato con successo."}
+    return {"message": f"Il sample vocale di {username} è stato eliminato con successo."}
 
 
 # Face Enrollment Endpoint
@@ -237,7 +237,7 @@ def check_face_status(request: Request):
     return {"has_embedding": has_embedding}
 
 @app.get("/check/voice")
-def check_face_status(request: Request):
+def check_voice_status(request: Request):
     username = request.cookies.get("username")
 
     if not username:
