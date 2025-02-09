@@ -43,13 +43,15 @@ db = client["app"]  # Nome del database
 user_collection = db["users"]  # Collezione per gli utenti
 embedding_collection = db["embeddings"]  # Collezione per gli embedding
 
+# Inizializza il modello FaceNet e il rilevatore di volti MTCNN
+embedder = FaceNet()
+detector = MTCNN()
+
+
+
+
 #-------------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------------
-#Funzioni VAD
-def vad_detect(audio, model, SAMPLE_RATE):
-    """Esegue il Voice Activity Detection (VAD) sul segnale audio."""
-    timestamps = get_speech_timestamps(audio, model, sampling_rate=SAMPLE_RATE)
-    return len(timestamps) > 0  # True se c'è voce
+#-------------------------------------------------------------------------------------    
 
 def listen_for_audio(DURATION, SAMPLE_RATE):
     """Registra audio dal microfono per la durata specificata."""
@@ -191,56 +193,58 @@ def calculate_embedding(file_path,output_dir, username, num_recording):
     np.save(os.path.join(output_dir, f"{username}_{num_recording}.npy"), embedding)
     return True
 
-def identify_speaker(file_path,input_emb_dir, DURATION_VR, SAMPLE_RATE, threshold):
+def identify_speaker(BASE_DIR,DURATION_VR, SAMPLE_RATE, threshold):
     """
     Funzione per identificare lo speaker in un file audio.
     """
     verification = SpeakerRecognition.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
     
-    audio_sv = listen_for_audio( DURATION_VR, SAMPLE_RATE)
+    audio_sv = listen_for_audio(DURATION_VR, SAMPLE_RATE)
     sd.wait()
-    temp_filepath = os.path.join(file_path,"temp_audio.wav")
+    temp_filepath = os.path.join(BASE_DIR, "temp_audio.wav")
     save_audio_to_file(audio_sv, temp_filepath, SAMPLE_RATE)
 
-    calculate_embedding(temp_filepath,file_path,"temp",1)
+    calculate_embedding(temp_filepath, BASE_DIR, "temp", 1)
 
-    #Invio al server per identificazione
+    # Invio al server per identificazione
     print("\n------------------------------------------")
     print("Registrazione salvata, Inizio identificazione...")
     print("------------------------------------------")
     
-    registered_voices= load_registered_voices(input_emb_dir)
-    print("Embeddings caricati:", registered_voices.keys())
+    registered_voices = load_registered_voices_from_db(embedding_collection)
     
     max_score = float('-inf')  # Punteggio massimo iniziale
     best_match = None  # Username associato al punteggio massimo
     
-    tmp_np_path= os.path.join(file_path,"temp_1.npy")
-    tmp_np=np.load(tmp_np_path)
-    tmp_torch= torch.tensor(tmp_np)
+    tmp_np_path = os.path.join(BASE_DIR, "temp_1.npy")
+    tmp_np = np.load(tmp_np_path)
+    tmp_torch = torch.tensor(tmp_np)
 
     # Identifica lo speaker confrontando con gli embedding registrati
-    for username, registered_encoding in registered_voices.items():
-        tmp_torch_enrolled_user= torch.tensor(registered_encoding)
-        
-        score = verification.similarity(tmp_torch,tmp_torch_enrolled_user).item()
-        print(f"Utente: {username}, Score: {score}")
-        
-        # Aggiorna il punteggio massimo se necessario
-        if score > max_score :
-            max_score = score
-            best_match = username
+    for record in registered_voices:
+        for username, registered_encoding in record.items():
+            tmp_torch_enrolled_user = torch.tensor(registered_encoding)
+            
+            score = verification.similarity(tmp_torch, tmp_torch_enrolled_user).item()
+            print(f"Utente: {username}, Score: {score}")
+            
+            # Aggiorna il punteggio massimo se necessario
+            if score > max_score:
+                max_score = score
+                best_match = username
 
     # Stampa l'username con il punteggio più alto e maggiore della soglia
     print("\n------------------------------------------")
     if (best_match is not None) and (max_score > threshold): 
         print(f"Speaker identificato: {best_match} con score: {max_score}")
+        os.remove(temp_filepath) # Elimina il file temporaneo
+        os.remove(tmp_np_path)  # Elimina il file temporaneo
         return True
     else:
         print("Nessuno speaker identificato.")
+        os.remove(temp_filepath)  # Elimina il file temporaneo
+        os.remove(tmp_np_path)  # Elimina il file temporaneo
         return False
-    print("------------------------------------------")
-    
 
 def load_registered_voices(path):
     """Carica gli embedding registrati da file .npy."""
@@ -249,6 +253,21 @@ def load_registered_voices(path):
         if file.endswith(".npy"):
             username = os.path.splitext(file)[0]
             embeddings[username] = np.load(os.path.join(path, file))
+    return embeddings
+
+def load_registered_voices_from_db(embedding_collection):
+    """Carica gli embedding registrati dal database."""
+    embeddings = []
+    
+    # Recupera tutti i documenti con type "voice"
+    cursor = embedding_collection.find({"type": {"$regex": "voice"}})
+
+    for record in cursor:
+        username = record["username"]
+        # Decodifica l'embedding salvato come binario
+        embedding = np.frombuffer(record["embedding"], dtype=np.float32)
+        embeddings.append({username:embedding})
+    print("Embeddings caricati presi dal db:", embeddings)
     return embeddings
 
 #-------------------------------------------------------------------------------------
@@ -310,9 +329,7 @@ def load_registered_faces_from_db(embedding_collection):
 
 def recognize_face_live(threshold):
     """Riconoscimento facciale live utilizzando FaceNet e similarità coseno."""
-    # Inizializza il modello FaceNet e il rilevatore di volti MTCNN
-    embedder = FaceNet()
-    detector = MTCNN()
+    
 
     # Carica gli embedding registrati
     registered_faces = load_registered_faces_from_db(embedding_collection)
@@ -367,15 +384,15 @@ def recognize_face_live(threshold):
                             is_user_recognized = True
 
             # Mostra il video live con i riquadri disegnati
-            cv2.imshow("Riconoscimento Facciale", frame)
+            #cv2.imshow("Riconoscimento Facciale", frame)
 
             # Esci con il tasto 'q'
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            #if cv2.waitKey(1) & 0xFF == ord('q'):
+            #    break
             
             if is_user_recognized:
                 cap.release()
-                cv2.destroyAllWindows()
+                #cv2.destroyAllWindows()
                 return True
         else: 
             print("Nessun volto rilevato.")

@@ -1,12 +1,10 @@
 from utils import *
 import os
-import glob
-import argparse
 from silero_vad import get_speech_timestamps
+import numpy as np
+import sounddevice as sd
 
-#Speaker Rec.
-#Comandi per esecuzione:
-#Eseguire il server in Bash: cmd --> node server.js
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 #MAIN -- Loop Vocale
 #Configurazione microfono
@@ -17,46 +15,63 @@ DURATION_EN = 35         #Ascolta per 30 secondi
 c = 0                    #Contatore SV
 exit_flag = True         #Metodo per terminare il ciclo 
 
-model, utils = torch.hub.load(
-    repo_or_dir='snakers4/silero-vad',
-    model='silero_vad',
-    source='github'
-    )
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
 
 
+model, utils = torch.hub.load(
+    repo_or_dir='snakers4/silero-vad',
+    model='silero_vad',
+    source='github'
+    )
+device = torch.device("cpu")
 silero_vad = model.to(device)
+
+
+
+def generate_beep(frequency=440, duration=0.3, sample_rate=44100):
+    t = np.linspace(0, duration, int(sample_rate * duration), False)
+    beep = 0.5 * np.sin(2 * np.pi * frequency * t)
+    sd.play(beep, sample_rate)
+    sd.wait()
 
 def pipeline():
     print(device)
     while True:
-            print("Microfono connesso")
+        print("Microfono connesso")
 
-            audio = listen_for_audio(DURATION_VAD, SAMPLE_RATE)
-            if(VAD(audio,silero_vad,SAMPLE_RATE)):
-                print("VAD: Utente sta parlando")
-                if(speekerRecognition()):
-                    print("SpeakerRecognition: Utente riconosciuto")
-                    if(faceRecognition()):
-                        print("FaceRecognition: Utente riconosciuto")
-                        print("Accesso consentito! Benvenuto.")
-                        break
-                    else:
-                        print("FaceRecognition: Utente non riconosciuto")
+        audio = listen_for_audio(DURATION_VAD, SAMPLE_RATE)
+        if(VAD(audio, model, SAMPLE_RATE)):
+            print("VAD: Utente sta parlando")
+            generate_beep()
+            if(speekerRecognition()):
+                print("SpeakerRecognition: Utente riconosciuto")
+                generate_beep()
+                generate_beep()
+                if(faceRecognition()):
+                    print("FaceRecognition: Utente riconosciuto")
+                    generate_beep()
+                    generate_beep()
+                    generate_beep(duration=1)
+                    print("Accesso consentito! Benvenuto.")
+                    break
                 else:
-                    print("SpeakerRecognition: Utente non riconosciuto")
+                    print("FaceRecognition: Utente non riconosciuto")
             else:
-                print("VAD: Utente non sta parlando")
+                print("SpeakerRecognition: Utente non riconosciuto")
+                generate_beep()
+        else:
+            print("VAD: Utente non sta parlando")
 
-def VAD(audio,silero_vad,SAMPLE_RATE):
-    return vad_detect(audio, silero_vad, SAMPLE_RATE)
+def VAD(audio,model,SAMPLE_RATE):
+    """Esegue il Voice Activity Detection (VAD) sul segnale audio."""
+    timestamps = get_speech_timestamps(audio, model, sampling_rate=SAMPLE_RATE)
+
+    return len(timestamps) > 0  # True se c'è voce
 	
 def speekerRecognition():
-    output_emb_dir = f"C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\"
-    input_emb_dir = f"C:\\Users\\4k\\Documents\\Università\\2°anno\\ict-project\\Database\\People\\Embedding\\Voice\\"
-    return identify_speaker(output_emb_dir,input_emb_dir, DURATION_VR, SAMPLE_RATE, threshold=0.6)
+    return identify_speaker(BASE_DIR,DURATION_VR, SAMPLE_RATE, threshold=0.6)
 
 def faceRecognition():
     return recognize_face_live(threshold=0.65)
@@ -65,7 +80,7 @@ def faceRecognition():
 if __name__ == "__main__":
     #voice_enrollment(username="Leonardo")
     #speekerRecognition()
-    #pipeline()
+    pipeline()
     #face_enrollment("Leonardo")
-    faceRecognition()
+    #faceRecognition()
     
