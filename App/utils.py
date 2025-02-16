@@ -1,17 +1,10 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
 import torchaudio.transforms as T
 import torchaudio
 from speechbrain.inference.speaker import EncoderClassifier
 from speechbrain.inference.speaker import SpeakerRecognition
 
 #Face Enrollment
-import dlib
 from PIL import Image
 from keras_facenet import FaceNet
 
@@ -23,9 +16,7 @@ from mtcnn import MTCNN
 #Audio e Speech Recognition + Face Recognition
 import numpy as np
 import sounddevice as sd
-import pyaudio
 import soundfile as sf
-import sys
 
 from silero_vad import get_speech_timestamps
 
@@ -36,9 +27,11 @@ import json
 import os
 
 from pymongo import MongoClient
+from dotenv import load_dotenv
 
-# Connessione a MongoDB
-client = MongoClient("mongodb://localhost:27017/")  # Sostituire con il tuo URI di MongoDB
+load_dotenv()
+MONGODB_URI = os.getenv("MONGODB_URI")
+client = MongoClient(MONGODB_URI)
 db = client["app"]  # Nome del database
 user_collection = db["users"]  # Collezione per gli utenti
 embedding_collection = db["embeddings"]  # Collezione per gli embedding
@@ -46,8 +39,6 @@ embedding_collection = db["embeddings"]  # Collezione per gli embedding
 # Inizializza il modello FaceNet e il rilevatore di volti MTCNN
 embedder = FaceNet()
 detector = MTCNN()
-
-
 
 
 #-------------------------------------------------------------------------------------

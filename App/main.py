@@ -46,9 +46,9 @@ def pipeline():
             print("VAD: Utente sta parlando")
             generate_beep()
             if(speekerRecognition()):
+                generate_beep()
+                generate_beep()
                 print("SpeakerRecognition: Utente riconosciuto")
-                generate_beep()
-                generate_beep()
                 if(faceRecognition()):
                     print("FaceRecognition: Utente riconosciuto")
                     generate_beep()
@@ -78,9 +78,7 @@ def faceRecognition():
 
 
 if __name__ == "__main__":
-    #voice_enrollment(username="Leonardo")
     #speekerRecognition()
     pipeline()
-    #face_enrollment("Leonardo")
     #faceRecognition()
     

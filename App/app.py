@@ -2,7 +2,6 @@ from fastapi import FastAPI, Form, File, UploadFile, HTTPException, Depends, Res
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
-from typing import List
 from pydantic import BaseModel
 import os
 import numpy as np
@@ -10,12 +9,16 @@ from app_utils import extract_voice_embedding, extract_face_embedding  # Funzion
 from pymongo import MongoClient
 from bson.binary import Binary
 from io import BytesIO
-from fastapi.middleware.cors import CORSMiddleware
 import io
 from pydub import AudioSegment
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Connessione a MongoDB
-client = MongoClient("mongodb://localhost:27017/")  # Sostituire con il tuo URI di MongoDB
+mongodb_uri = os.environ.get("MONGODB_URI")
+client = MongoClient(mongodb_uri)
 db = client["app"]  # Nome del database
 user_collection = db["users"]  # Collezione per gli utenti
 embedding_collection = db["embeddings"]  # Collezione per gli embedding
@@ -120,7 +123,7 @@ async def enroll_voice(
             "embedding": Binary(np.array(embedding).tobytes())  # Memorizza come binario
         })
 
-        return {"message": f"Voice recording successfully saved for {username}!"}
+        return {"message": f"✅ Voice recording successfully saved for {username}!"}
     
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -193,7 +196,7 @@ async def delete_face_embedding(request: Request, sample: int = Form(...)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Face embedding not found.")
 
-    return {"message": f"Il sample vocale di {username} è stato eliminato con successo."}
+    return {"message": f"✅ Il sample vocale di {username} è stato eliminato con successo."}
 
 
 # Face Enrollment Endpoint
@@ -223,7 +226,7 @@ async def enroll_face(request: Request, file: UploadFile = File(...)):
         {"username": username, "type": "face", "embedding": Binary(np.array(embedding).tobytes())}
     )
 
-    return {"message": f"Congratulazioni {username}! Il tuo volto è stato creato con successo."}
+    return {"message": f"✅ Congratulazioni {username}! Il tuo volto è stato creato con successo."}
 
 @app.get("/check/face")
 def check_face_status(request: Request):
@@ -282,7 +285,7 @@ async def modify_face(request: Request, file: UploadFile = File(...)):
         upsert=True
     )
     
-    return {"message": f"Congratulazioni {username}! Il tuo volto è stato aggiornato con successo."}
+    return {"status_code": 200, "message": f" ✅ Congratulazioni {username}! Il tuo volto è stato aggiornato con successo."}
 
 
 @app.delete("/delete/face")

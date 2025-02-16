@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+motor  # Asynchronous MongoDB driver (se usi funzionalità asincrone)
+pymongo
+pydantic
+numpy
+Pillow
+opencv-python
+keras-facenet
+mtcnn
+speechbrain
+torch
+torchaudio
+pydub
+python-multipart  # Necessario per gestire l'upload di file con FastAPI
+tensorflow
